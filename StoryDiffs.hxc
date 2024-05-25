@@ -26,10 +26,11 @@ import funkin.data.song.SongPlayData;
 
 import funkin.audio.FunkinSound;
 
-// In order for this to work properly,
-// the base song's script needs to use
-// the template on docs/templates/LevelScriptTemplate.hxc
-
+/**
+ * In order for this to work properly,
+ * the base song's script needs to use
+ * the template on docs/templates/LevelScriptTemplate.hxc
+ */
 class StoryDiffs extends Module {
 	public function new()
 	{
@@ -77,6 +78,9 @@ class StoryDiffs extends Module {
         if (difficulties.length == 0) {return;}
 
         var levelData:Dynamic = LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path);
+
+        LevelRegistry.instance.fetchEntry(levelId).scriptCall("considerAddingSongs", [levelData.songs]);
+
         for (diff in difficulties) {
             this.levelAltData[0].push(diff+levelId);
             this.levelAltData[1].push(levelData);
@@ -85,6 +89,7 @@ class StoryDiffs extends Module {
         if (!this.hasAltData.contains(levelId)) {
             this.hasAltData.push(levelId);
         }
+
         trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on variation ('+variationId+')');
     }
 
@@ -92,8 +97,13 @@ class StoryDiffs extends Module {
         trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
         var path = Paths.json(basePrefixLADP+diffsPrefixLADP+difficultyId+"/"+levelId);
         if (!Assets.exists(path)) {return;}
+
+        var levelData:Dynamic = LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path);
+
+        LevelRegistry.instance.fetchEntry(levelId).scriptCall("considerAddingSongs", [levelData.songs]);
+
         this.levelAltData[0].push(difficultyId+levelId);
-        this.levelAltData[1].push(LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path));
+        this.levelAltData[1].push(levelData);
 
         if (!this.hasAltData.contains(levelId)) {
             this.hasAltData.push(levelId);
@@ -107,11 +117,12 @@ class StoryDiffs extends Module {
 
         var levelIdList:Array<String> = [];
 
-        this.difficultiesToVariations = ModuleHandler.getModule("vari-injector").
-            scriptGet("difficultiesToVariations");
+        this.difficultiesToVariations = ModuleHandler.getModule("vari-injector").scriptGet("difficultiesToVariations");
         
-        
-        var allVariations:Array<String> = ArrayTools.unique(difficultiesToVariations[1]);
+        // Making alt level data for the
+        // default variation is not recommended.
+        // Please use the default level data instead.
+        var allVariations:Array<String> = ArrayTools.unique(difficultiesToVariations[1]).remove("default");
 
         for (variationId in allVariations) {
 
@@ -139,6 +150,10 @@ class StoryDiffs extends Module {
             for (levelId in levelIdList) {
                 this.addLevelAltDataForDifficulty(levelId, difficultyId);
             }
+        }
+
+        for (levelId in this.hasAltData) {
+            LevelRegistry.instance.fetchEntry(levelId).scriptCall("resetDataToDefault", []);
         }
 
         this.finishedSetup = true;

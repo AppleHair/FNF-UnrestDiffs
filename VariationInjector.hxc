@@ -19,23 +19,17 @@ import funkin.util.Constants;
 import funkin.util.DataAssets;
 import funkin.util.tools.ArrayTools;
 
-// In order for this to work, the base
-// song's script needs to use the
-// template on docs/templates/SongScriptTemplate.hxc
-
+/**
+ * In order for this to work, the base
+ * song's script needs to use the
+ * template on docs/templates/SongScriptTemplate.hxc
+ */
 class VariationInjector extends Module {
 
 	public function new()
 	{
 		super('vari-injector');
         this.priority = 0;
-
-        // Removes the depricated "lastinjectedvaris"
-        // option from the save file, (HUGE F)
-        if (Save.instance.modOptions.exists("lastinjectedvaris")) {
-            Save.instance.modOptions.remove("lastinjectedvaris");
-            Save.instance.flush();
-        }
 	}
     
     public var difficultySorting:Array<Array<String>> = [

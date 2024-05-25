@@ -29,13 +29,10 @@ class LevelName extends Level {
 
 
 
-	function new()
-	{
+	function new() {
 		// fill your level id
 		super("levelId");
-        // In the beginning, the data is the same as the default data.
-        this._defaultData = this._data;
-        // Put here what ever you want:
+        // Put what ever you want here:
 
 
 
@@ -76,10 +73,37 @@ class LevelName extends Level {
     	this._data = this._defaultData;
   	}
 
+	public function considerAddingSongs(songs:Array<String>):Void {
+		if (songs == null) {return;}
+		if (ArrayTools.isSuperset(this._defaultData.songs,songs) ||
+			!ArrayTools.isSuperset(songs, this._data.songs)) {return;}
+
+		var accumulatedSongsQueue:Array<String> = [];
+		for (songId in songs) {
+			if (this._defaultData.songs.indexOf(songId) == -1) {
+				accumulatedSongsQueue.push(songId);
+				continue;
+			}
+			while (accumulatedSongsQueue.length > 0) {
+				this._defaultData.songs.insert(
+					this._defaultData.songs.indexOf(songId),
+					accumulatedSongsQueue.shift()
+				);
+			}
+		}
+		while (accumulatedSongsQueue.length > 0) {
+			this._defaultData.songs.push(accumulatedSongsQueue.shift());
+		}
+	}
+
   	//-----------------------------------------//
   	//       DON'T EDIT THIS FUNCTION IF       //
   	//    YOU DON'T KNOW WHAT YOU'RE DOING!    //
   	//-----------------------------------------//
+	/**
+	 * Get the list of songs in this level, as an array of IDs.
+	 * @return Array<String>
+	 */
   	public override function getSongs():Array<String> {
 		// gets the songs normally
 		var songs = super.getSongs();
@@ -123,6 +147,10 @@ class LevelName extends Level {
   	//       DON'T EDIT THIS FUNCTION IF       //
   	//    YOU DON'T KNOW WHAT YOU'RE DOING!    //
   	//-----------------------------------------//
+	/**
+	 * The list of difficulties the player can select from for this level.
+	 * @return The difficulty IDs.
+	 */
   	public override function getDifficulties():Array<String> {
 		// calibrates the difficulties array
     	this._difficulties = [];
@@ -184,6 +212,11 @@ class LevelName extends Level {
   	//       DON'T EDIT THIS FUNCTION IF      //
   	//    YOU DON'T KNOW WHAT YOU'RE DOING!   //
   	//----------------------------------------//
+	/**
+	 * Get the list of songs in this level, as an array of names, for display on the menu.
+	 * @param difficulty The difficulty of the level being displayed
+	 * @return The display names of the songs in this level
+	 */
   	public override function getSongDisplayNames(difficulty:String):Array<String> {
 		// use the function normally, but filter
 		// empty strings from the returned array.

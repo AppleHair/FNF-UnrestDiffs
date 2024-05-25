@@ -30,7 +30,7 @@ class SongName extends Song {
     function new() {
         // fill your song id
         super("songId");
-        // do what ever you want here:
+        // Put what ever you want here:
 
 
 
@@ -38,8 +38,7 @@ class SongName extends Song {
 
 
     }
-
-    // do what ever you want here:
+    // Declare your functions here:
 
 
 
@@ -74,6 +73,15 @@ class SongName extends Song {
     //    IGNORE `variationIds` PARAMETER    //
     //            AT ALL COSTS!!!            //
     //---------------------------------------//
+	/**
+	 * List all the difficulties in this song.
+	 *
+	 * @param variationId Optionally filter by a single variation.
+	 * @param showLocked Include charts which are not unlocked
+	 * @param showHidden Include charts which are not accessible to the player.
+	 *
+	 * @return The list of difficulties.
+	 */
     public override function listDifficulties(?variationId:String,
         ?variationIds:Array<String>, showLocked:Bool = false,
         showHidden:Bool = false):Array<String>
@@ -89,6 +97,12 @@ class SongName extends Song {
     //     IGNORE `variations` PARAMETER     //
     //            AT ALL COSTS!!!            //
     //---------------------------------------//
+	/**
+	 * Retrieve the metadata for a specific difficulty, including the chart if it is loaded.
+	 * @param diffId The difficulty ID, such as `easy` or `hard`.
+	 * @param variation The variation ID to fetch the difficulty for.
+	 * @return The difficulty data.
+	 */
     public override function getDifficulty(?diffId:String,
 		?variation:String, ?variations:Array<String>):Null<SongDifficulty>
     {
