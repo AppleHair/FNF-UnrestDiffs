@@ -1,0 +1,234 @@
+// Import what ever you want here:
+
+
+import funkin.play.PlayState;
+import funkin.Paths;
+
+import funkin.play.PlayStatePlaylist;
+import funkin.modding.base.ScriptedFlxSpriteGroup;
+import funkin.play.cutscene.VideoCutscene;
+
+
+
+// DON'T REMOVE THESE IMPORTS!!!
+import flixel.FlxG;
+
+import funkin.play.song.Song;
+import funkin.data.song.SongMetadata;
+import funkin.play.song.SongDifficulty;
+import funkin.util.tools.ArrayTools;
+import funkin.util.Constants;
+
+// fill your class name
+class StressSong extends Song {
+
+    // Set these on onCountDownStart through
+    // a module to override default behavior
+    public var hasPlayedCutscene:Bool = false;
+    public var cutsceneVideoPath:String = 'stressCutscene';
+    public var cancelPicoSpeakerChart:Bool = false;
+    public var cancelTankmanGroup:Bool = false;
+    public var tankmanGroup:TankmanSpriteGroup = null;
+
+    public function new(songId:String) {
+        // trace("[SONG] - Called init");
+        // trace(songId);
+
+        // fill your song id
+        super("stress");
+        // do what ever you want here:
+        // (IGNORE `songId` PARAMETER!!)
+
+
+
+        //   VARIATION INJECTION DOT TOUCH!!!   //
+        if (songId != "unknown") {
+            // trace("[SONG] - Receved variations");
+            var varis = songId.substr(1,songId.length-2).split(',');
+            // trace(varis);
+            var res = this.injectVariants(varis);
+            if (!res) {return null;}
+        }
+    }
+
+    // do what ever you want here:
+
+
+
+
+    public override function onCountdownStart(event:CountdownScriptEvent):Void {
+      super.onCountdownStart(event);
+
+      if (!PlayStatePlaylist.isStoryMode) hasPlayedCutscene = true;
+
+      if (!hasPlayedCutscene) {
+        trace('Pausing countdown to play a video cutscene (`stress`)');
+
+        hasPlayedCutscene = true;
+
+        event.cancel(); // CANCEL THE COUNTDOWN!
+
+        startVideo();
+      }
+
+      if (cancelTankmanGroup) {
+        if (tankmanGroup != null) {
+          PlayState.instance.currentStage.remove(tankmanGroup);
+          tankmanGroup.destroy();
+          tankmanGroup = null;
+        }
+        trace('Cancelled tankman group.');
+        return;
+      }
+
+      trace('Initializing tankman group...');
+      tankmanGroup = ScriptedFlxSpriteGroup.init('TankmanSpriteGroup');
+
+      if (tankmanGroup != null) {
+        // resets the tankmen!
+        tankmanGroup.scriptCall('reset');
+
+        tankmanGroup.zIndex = 30;
+        PlayState.instance.currentStage.add(tankmanGroup);
+        PlayState.instance.currentStage.refresh();
+      } else {
+        trace('Failed to initialize tankman group!');
+      }
+    }
+
+    function startVideo() {
+      VideoCutscene.play(Paths.videos(cutsceneVideoPath));
+    }
+
+    /**
+     * Don't replay the cutscene between restarts.
+     */
+    function onSongRetry(event:ScriptEvent)
+    {
+      super.onSongRetry(event);
+
+      hasPlayedCutscene = true;
+
+      // resets the tankmen!
+      if (tankmanGroup != null) {
+        tankmanGroup.scriptCall('reset');
+      }
+      if(PlayState.instance.currentStage.getGirlfriend() != null){
+          PlayState.instance.currentStage.getGirlfriend().scriptCall('reset');
+          trace('reset pico!');
+      }
+    }
+
+    /**
+     * Replay the cutscene after leaving the song.
+     */
+    function onCreate(event:ScriptEvent):Void
+    {
+      super.onCreate(event);
+
+      hasPlayedCutscene = false;
+      cancelPicoSpeakerChart = false;
+      cancelTankmanGroup = false;
+      cutsceneVideoPath = 'stressCutscene';
+    }
+
+    function kill():Void {
+      if (tankmanGroup != null) {
+        PlayState.instance.currentStage.remove(tankmanGroup);
+        tankmanGroup.destroy();
+        tankmanGroup = null;
+      }
+    }
+
+
+
+    //-------------------------------------//
+    //    DOT TOUCH `injectVariants`!!!    //
+    //-------------------------------------//
+
+    public function injectVariants(varis:Array<String>):Bool {
+        for (vari in varis) {
+            var variMeta:Null<SongMetadata> = this.fetchVariationMetadata(this.id, vari);
+            if (variMeta == null) {
+                FlxG.log.warn('[SONG] Failed to load variation metadata ('+this.id+':'+vari+'), is the path correct?');
+                trace('[SONG]  FAILED to load variation: '+vari);
+                return false;
+            }
+            this._metadata.set(variMeta.variation, variMeta);
+            trace('[SONG]  Loaded variation: '+vari);
+        }
+        this.populateDifficulties();
+        return true;
+    }
+
+    //---------------------------------------//
+    //    IF YOU EDIT `listDifficulties`,    //
+    //    IGNORE `variationIds` PARAMETER    //
+    //            AT ALL COSTS!!!            //
+    //---------------------------------------//
+
+    public override function listDifficulties(?variationId:String,
+        ?variationIds:Array<String>, showLocked:Bool = false,
+        showHidden:Bool = false):Array<String>
+    {
+        return super.listDifficulties(variationId,this.variations,showLocked,showHidden);
+    }
+
+    //---------------------------------------//
+    //      IF YOU EDIT `getDifficulty`      //
+    //     IGNORE `variations` PARAMETER     //
+    //            AT ALL COSTS!!!            //
+    //---------------------------------------//
+
+    public override function getDifficulty(?diffId:String, ?variation:String,
+        ?variations:Array<String>):Null<SongDifficulty>
+    {
+        if (diffId == 'picospeaker' && cancelPicoSpeakerChart) {return null;}
+        if (diffId == null) {diffId = listDifficulties(variation)[0];}
+        tryVariationId = this.getFirstValidVariation(diffId);
+        if (tryVariationId == null) {return  null;}
+        if (variation == null) {variation = tryVariationId;}
+
+        var variationSuffix = (variation != Constants.DEFAULT_VARIATION) ? '-'+variation : '';
+
+        if (difficulties.exists(diffId+variationSuffix)) {
+            return difficulties.get(diffId+variationSuffix);
+        }
+        return (variation == tryVariationId ? null : this.getDifficulty(diffId));
+    }
+
+    //-------------------------------------------//
+    //   IF YOU EDIT `getFirstValidVariation`,   //
+    //   IGNORE `possibleVariations` PARAMETER   //
+    //              AT ALL COSTS!!!              //
+    //-------------------------------------------//
+
+    public override function getFirstValidVariation(?diffId:String,
+        ?possibleVariations:Array<String>):Null<String>
+    {
+        return super.getFirstValidVariation(diffId);
+    }
+
+    //---------------------------------------//
+    //      IF YOU EDIT `hasDifficulty`      //
+    //    IGNORE `variationIds` PARAMETER    //
+    //            AT ALL COSTS!!!            //
+
+    // (NOTE: This function is unused in the //
+    //  game's code on 0.3.2, but it might   //
+    //  get reused in the future)            //
+    //---------------------------------------//
+
+    public override function hasDifficulty(diffId:String,
+        ?variationId:String, ?variationIds:Array<String>):Bool
+    {
+        tryVariationId = this.getFirstValidVariation(diffId);
+        if (tryVariationId == null) {return false;}
+        if (variationId == null) {variationId = tryVariationId;}
+
+        variationIds = null;
+
+        var variationSuffix = (variationId != Constants.DEFAULT_VARIATION) ? '-'+variationId : '';
+        return this.difficulties.exists(diffId+variationSuffix);
+    }
+}

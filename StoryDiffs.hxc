@@ -1,0 +1,482 @@
+import StringTools;
+
+import flixel.FlxG;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
+import flixel.FlxSprite;
+
+import openfl.utils.Assets;
+
+import funkin.modding.module.Module;
+import funkin.modding.module.ModuleHandler;
+
+import funkin.ui.story.StoryMenuState;
+import funkin.ui.story.Level;
+import funkin.ui.story.ScriptedLevel;
+import funkin.data.story.level.LevelRegistry;
+
+import funkin.util.Constants;
+import funkin.util.tools.ArrayTools;
+import funkin.Paths;
+
+import funkin.play.song.Song;
+import funkin.data.song.SongRegistry;
+import funkin.data.song.SongMetadata;
+import funkin.data.song.SongPlayData;
+
+import funkin.audio.FunkinSound;
+
+class StoryDiffs extends Module {
+	public function new()
+	{
+		super('story-diffs');
+        this.priority = 1;
+	}
+
+    var storyMenu:StoryMenuState = null;
+
+    var justEnteredStoryMenu:Bool = false;
+
+    var lastRememberedDifficulty:String = Constants.DEFAULT_DIFFICULTY;
+
+    var lastDifficultyList:Array<String> = Constants.DEFAULT_DIFFICULTY_LIST_FULL;
+
+    var lastRememberedLevel:String = Constants.DEFAULT_SONG;//"tutorial"
+
+    var levelAltData:Array<Array<Dynamic>> = [[],[]];
+
+    var hasAltData:Array<String> = [];
+
+    // public override function onCreate(event:ScriptEvent):Void {
+    //     trace(this.lastRememberedDifficulty);
+    //     trace(this.lastDifficultyList);
+    // }
+
+    public function requestLevelAltDataForVariation(levelId:String, variationId:String):Void {
+        trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on variation ('+variationId+')');
+        var path = Paths.json("levels-alt/variations/"+variationId+"/"+levelId);
+        if (!Assets.exists(path)) {return;}
+        var difficultiesToVariations:Array<Array<String>> = ModuleHandler.
+            getModule("vari-injector").scriptGet("difficultiesToVariations");
+        var difficulties:Array<String> = [];
+        for (diffIndex in 0...difficultiesToVariations[1].length) {
+            if (difficultiesToVariations[1][diffIndex] == variationId &&
+                !this.levelAltData[0].contains(difficultiesToVariations[0][diffIndex]+levelId)) {
+                difficulties.push(difficultiesToVariations[0][diffIndex]);
+            }
+        }
+        if (difficulties.length == 0) {return;}
+
+        var levelData:Dynamic = LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path);
+        for (diff in difficulties) {
+            this.levelAltData[0].push(diff+levelId);
+            this.levelAltData[1].push(levelData);
+        }
+
+        if (!this.hasAltData.contains(levelId)) {
+            this.hasAltData.push(levelId);
+        }
+        trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on variation ('+variationId+')');
+    }
+
+    public function requestLevelAltDataForDifficulty(levelId:String, difficultyId:String):Void {
+        trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
+        var path = Paths.json("levels-alt/difficulties/"+difficultyId+"/"+levelId);
+        if (!Assets.exists(path)) {return;}
+        this.levelAltData[0].push(difficultyId+levelId);
+        this.levelAltData[1].push(LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path));
+
+        if (!this.hasAltData.contains(levelId)) {
+            this.hasAltData.push(levelId);
+        }
+        trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
+    }
+
+
+    public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
+        // trace('called onStateChangeEnd');
+        // trace(Type.typeof(event.targetState));
+        if (Std.isOfType(event.targetState, StoryMenuState)) {
+            this.storyMenu = event.targetState;
+            this.justEnteredStoryMenu = true;
+            this.storyMenu.persistentUpdate = true;
+            // trace('StoryDiffs ON');
+            // trace(this.lastRememberedDifficulty);
+            // trace(this.lastDifficultyList);
+        } else {
+            this.storyMenu = null;
+            // trace('StoryDiffs OFF');
+            // trace(this.lastRememberedDifficulty);
+            // trace(this.lastDifficultyList);
+        }
+    }
+
+    public override function onUpdate(event:UpdateScriptEvent):Void {
+        if (this.storyMenu == null) {return;}
+        overrideCreationCall();
+        if (!this.storyMenu.exitingMenu) { if (!this.storyMenu.selectedLevel) {
+            boundDifficulty();
+            forceDifficultyChange();
+            determineArrowVisibility();
+            determineScrollBehavior();
+        }}
+    }
+
+    function overrideCreationCall():Void {
+        if (!this.justEnteredStoryMenu) {return;}
+        this.storyMenu.currentDifficultyId = "" + this.lastRememberedDifficulty;
+        StoryMenuState.rememberedDifficulty = "" + this.storyMenu.currentDifficultyId;
+        determineArrowVisibility();
+        this.storyMenu.buildDifficultySprite();
+        this.storyMenu.funnyMusicThing();
+        this.storyMenu.updateText();
+        this.justEnteredStoryMenu = false;
+    }
+
+    function boundDifficulty():Void {
+        if (this.storyMenu ==  null) {return;}
+
+        var curDifficultyList = this.storyMenu.currentLevel.getDifficulties();
+        if (ArrayTools.isEqualUnordered(curDifficultyList, this.lastDifficultyList)) {return;}
+        trace(curDifficultyList);
+
+        var newIndex:Int = curDifficultyList.indexOf(this.lastRememberedDifficulty);
+        if (newIndex == -1) {
+            newIndex = this.lastDifficultyList.indexOf(this.lastRememberedDifficulty);
+            if (newIndex == -1) {newIndex = 0;}
+            newIndex = (newIndex / (this.lastDifficultyList.length-1)) * (curDifficultyList.length-1);
+        }
+
+        this.lastDifficultyList = curDifficultyList;
+        this.storyMenu.currentDifficultyId = "" + this.lastDifficultyList[newIndex];
+        StoryMenuState.rememberedDifficulty = "" + this.storyMenu.currentDifficultyId;
+        this.lastRememberedDifficulty = "" + StoryMenuState.rememberedDifficulty;
+        // trace("difficulty bound successful");
+    }
+
+    function forceDifficultyChange():Void {
+        if (this.storyMenu ==  null) {return;}
+
+        var change:Int = 0;
+        if (this.storyMenu.controls.UI_RIGHT_P) {change++;}
+        if (this.storyMenu.controls.UI_LEFT_P) {change--;}
+        if (change == 0) {return;}
+
+        var currentIndex:Int = this.lastDifficultyList.indexOf(this.lastRememberedDifficulty) + change;
+
+        // Wrap around
+        if (currentIndex < 0) {currentIndex = this.lastDifficultyList.length - 1;}
+        if (currentIndex >= this.lastDifficultyList.length) {currentIndex = 0;}
+
+        this.storyMenu.currentDifficultyId = "" + this.lastDifficultyList[currentIndex];
+        StoryMenuState.rememberedDifficulty = "" + this.storyMenu.currentDifficultyId;
+        this.lastRememberedDifficulty = "" + StoryMenuState.rememberedDifficulty;
+        // trace("forced difficulty change successful");
+    }
+
+    function determineArrowVisibility():Void {
+        if (this.storyMenu ==  null) {return;}
+        if (this.lastDifficultyList.length <= 1) {
+            this.storyMenu.leftDifficultyArrow.visible = false;
+            this.storyMenu.rightDifficultyArrow.visible = false;
+            return;
+        }
+        this.storyMenu.leftDifficultyArrow.visible = true;
+        this.storyMenu.rightDifficultyArrow.visible = true;
+    }
+
+    var prvData:Dynamic = null;
+    var prvColor:Int = 0x0;
+
+    function determineScrollBehavior():Void {
+        if (this.storyMenu ==  null) {return;}
+        if (this.storyMenu.controls.UI_RIGHT_P ||
+            this.storyMenu.controls.UI_LEFT_P ||
+            this.storyMenu.controls.UI_UP_P ||
+            this.storyMenu.controls.UI_DOWN_P)
+        {
+            this.storyMenu.buildDifficultySprite();
+            FunkinSound.stopAllAudio(false);
+            FunkinSound.playOnce(Paths.sound('scrollMenu'), 0.4);
+            this.storyMenu.funnyMusicThing();
+
+            this.prvData = this.storyMenu.currentLevel._data;
+            this.prvColor = this.storyMenu.currentLevel.getBackgroundColor();
+            if (this.hasAltData.contains(this.storyMenu.currentLevelId)) {
+                var loadedNewData:Bool = false;
+                loadedNewData = this.reloadLevelData();
+                if (!loadedNewData) {
+                    this.storyMenu.currentLevel.scriptCall("resetDataToDefault", []);
+                }
+            }
+
+
+            if (this.lastRememberedLevel != this.storyMenu.currentLevelId) {
+                var prvLevel:Level = LevelRegistry.instance.fetchEntry(this.lastRememberedLevel);
+                prvData = prvLevel._data;
+                prvColor = prvLevel.getBackgroundColor();
+            }
+            this.forceUpdateBackground();
+
+            if (prvData != this.storyMenu.currentLevel._data) {
+                this.storyMenu.updateProps();
+                this.storyMenu.currentLevelTitle.title.loadGraphic(
+                    Paths.image(this.storyMenu.currentLevel._data.titleAsset)
+                );
+            }
+            this.storyMenu.updateText();
+            this.storyMenu.refresh();
+            trace('difficulty sprite rebuild successful \n(difficultyId: "'+this.lastRememberedDifficulty+'")');
+            this.lastRememberedLevel = "" + this.storyMenu.currentLevelId;
+        }
+    }
+
+    function reloadLevelData():Bool {
+        if (this.storyMenu ==  null) {return;}
+        var newData:Dynamic = null;
+        if (this.levelAltData[0].contains(this.storyMenu.currentDifficultyId+this.storyMenu.currentLevelId)) {
+            newData = this.levelAltData[1][
+                this.levelAltData[0].indexOf(this.storyMenu.currentDifficultyId+this.storyMenu.currentLevelId)
+            ];
+        }
+        if (newData != null) {
+            this.storyMenu.currentLevel.scriptCall("reloadData", [newData]);
+        }
+        return newData != null;
+    }
+
+    function forceUpdateBackground():Void {
+        if (this.storyMenu ==  null) {return;}
+        // use a custom Background transition, which is
+        // the same, but for switching between difficulties
+        var newColor:Int = this.storyMenu.currentLevel.getBackgroundColor();
+
+        if (this.prvData.background.charAt(0) == '#' && this.storyMenu.currentLevel._data.background.charAt(0) == '#') {
+            if (this.prvColor != newColor) {
+                // Both the previous and current level were simple backgrounds.
+                // Fade between colors directly, rather than fading one background out and another in.
+                // cancels potential tween in progress, and tweens from there
+                FlxTween.cancelTweensOf(this.storyMenu.levelBackground);
+                FlxTween.color(this.storyMenu.levelBackground, 0.9, this.storyMenu.levelBackground.color,
+                    newColor, {ease: FlxEase.quartOut});
+            } else {
+                // Both the previous and current level were simple backgrounds.
+                // No need to fade between colors, just update the color, because
+                // the previous call to updateBackground() from the source code
+                // might relay on data that changed already (in short, it's a bug fix)
+                FlxTween.cancelTweensOf(this.storyMenu.levelBackground);
+                this.storyMenu.levelBackground.color = newColor;
+            }
+        } else {
+            // Either the previous or current level has a complex background.
+            // We need to fade the old background out and the new one in.
+
+            // Reference the old background and fade it out.
+            var oldBackground:FlxSprite = this.storyMenu.levelBackground;
+            FlxTween.tween(oldBackground, {alpha: 0.0}, 0.6, {
+                ease: FlxEase.linear,
+                onComplete: function(_) {
+                    this.storyMenu.remove(oldBackground);
+                }
+            });
+
+            // Build a new background and fade it in.
+            this.storyMenu.levelBackground = this.storyMenu.currentLevel.buildBackground();
+            this.storyMenu.levelBackground.x = 0;
+            this.storyMenu.levelBackground.y = 56;
+            this.storyMenu.levelBackground.alpha = 0.0; // Hidden to start.
+            this.storyMenu.levelBackground.zIndex = 100;
+            this.storyMenu.add(levelBackground);
+
+            FlxTween.tween(this.storyMenu.levelBackground, {alpha: 1.0}, 0.6, {
+                ease: FlxEase.linear
+            });
+        }
+    }
+}
+
+// In order for this to work properly,
+// the base song's script needs to use
+// the following template:
+
+
+/*TEMPLATE START
+// DON'T REMOVE THESE IMPORTS!!!
+import flixel.FlxG;
+import funkin.ui.story.StoryMenuState;
+import funkin.util.SortUtil;
+import funkin.util.tools.ArrayTools;
+import funkin.util.Constants;
+import funkin.data.song.SongRegistry;
+import funkin.play.song.Song;
+import funkin.ui.story.Level;
+// Add your imports here:
+
+
+
+
+
+
+
+
+//----------------------------------------//
+//    USE THIS ONLY FOR NEW LEVELS AND    //
+//  NOT FOR OVERRIDEING EXISTING LEVELS!  //
+//----------------------------------------//
+
+class {{Level's Name}} extends Level {
+  // DON'T TOUCH THIS VARIABLE!!!
+  var _defaultData:Dynamic = null;
+  // Declare your variables here:
+
+
+
+
+
+
+	function new()
+	{
+		super("{{Level's Id}}");
+        // In the beginning, the data is the same as the default data.
+        this._defaultData = this._data;
+        // Put here what ever you want:
+
+
+
+
+
+
+	}
+    // Declare your functions here:
+
+
+
+
+
+
+
+
+
+
+
+  //-----------------------------------------//
+  //   LEVEL DATA RELOADING DON'T TOUCH!!!   //
+  //-----------------------------------------//
+  public function reloadData(newData:Dynamic):Void {
+    // don't load the same data twice
+    if (newData == this._data) {return;}
+    this._data = newData;
+    // I won't let you hide the level from
+    // story mode if it's not already hidden.
+    this._data.visible = this._defaultData.visible;
+    // I won't let you change the songs here.
+    // changing songs in a week will be a feature
+    // for the future, and won't be done here.
+    this._data.songs = this._defaultData.songs;
+  }
+
+  //-----------------------------------------//
+  //   LEVEL DATA RELOADING DON'T TOUCH!!!   //
+  //-----------------------------------------//
+  public function resetDataToDefault():Void {
+    // resets the data to the default data
+    this._data = this._defaultData;
+  }
+
+
+  //-----------------------------------------//
+  //       DON'T EDIT THIS FUNCTION IF       //
+  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+  //-----------------------------------------//
+  public override function getSongs():Array<String> {
+    var songs = super.getSongs();
+    var forRemoval:Array<String> = [];
+    for (song in songs) {
+      if (Std.isOfType(FlxG.state, StoryMenuState)) {
+        if (!SongRegistry.instance.fetchEntry(song).hasDifficulty(FlxG.state.currentDifficultyId)) {
+          forRemoval.push(song);
+        }
+      }
+    }
+    for (song in forRemoval) {
+      songs.remove(song);
+    }
+    return songs;
+  }
+
+  // I'm using this array to track the difficulties I
+  // return in getDifficulties. I'm declaring them here
+  // because I need to access them from a bigger scope,
+  // which I apparantly can't get on the Hscript stack,
+  // which is extremely bizarre. it literally just forgets
+  // some of the variables I declared if I don't declare
+  // them as attributes here.
+  var _difficulties:Array<String> = [];
+
+  //-----------------------------------------//
+  //       DON'T EDIT THIS FUNCTION IF       //
+  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+  //-----------------------------------------//
+  public override function getDifficulties():Array<String> {
+    this._difficulties = [];
+    var song:Null<Song> = null;
+    for (songId in _data.songs) {
+      song = SongRegistry.instance.fetchEntry(songId);
+      if (song == null) {continue;}
+
+      for (diff in song.listDifficulties(null, song.variations, false, false)) {
+        ArrayTools.pushUnique(this._difficulties, diff);
+      }
+    }
+    this._difficulties.sort(this.sortingStoryDiffs);
+    return this._difficulties;
+  }
+
+  //-----------------------------------------//
+  //       DON'T EDIT THIS FUNCTION IF       //
+  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+  //-----------------------------------------//
+  // Hscript doesn't want to use bind, so I made this...
+  function sortingStoryDiffs(a:String, b:String):Int {
+    return SortUtil.defaultsThenAlphabetically(Constants.DEFAULT_DIFFICULTY_LIST, a, b);
+  }
+
+  //----------------------------------------//
+  //   IF YOU WANT TO HIDE SONG NAMES FORM  //
+  //     THE STORY MODE MENU, CHECK OUT     //
+  //     `getSongDisplayName`, NOT THIS     //
+  //----------------------------------------//
+  //-----------------------------------------//
+  //       DON'T EDIT THIS FUNCTION IF       //
+  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+  //-----------------------------------------//
+  public override function getSongDisplayNames(difficulty:String):Array<String> {
+    var songList:Array<String> = getSongs();
+    if (songList == null) {songList = [];}
+    var songNameList:Array<String> = songList.map(function(songId:String) {
+      return this.getSongDisplayName(songId, difficulty);
+    }).filter(function(songName:String) {return songName.length > 0;});
+    return songNameList;
+  }
+
+  //-----------------------------------------//
+  //       DON'T EDIT THIS FUNCTION IF       //
+  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+  //   (except for the commented out part)   //
+  //-----------------------------------------//
+  public function getSongDisplayName(songId:String, difficulty:String):String {
+    var song:Null<Song> = SongRegistry.instance.fetchEntry(songId);
+    if (song == null) {return 'Unknown';}
+    // if (song.id == "blazin" && !{{condition}}) {return '';}
+    // THIS IS HOW YOU HIDE A SONG NAME
+    // FROM STORY MODE MENU ^^^^^^^^^^^^
+    // add more of these here:
+
+
+
+    var variMeta = song._metadata.get(song.getFirstValidVariation(difficulty));
+    if (variMeta == null) {return '';}
+    return variMeta.songName;
+  }
+}
+*/// TEMPLATE END

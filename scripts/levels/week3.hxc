@@ -1,0 +1,178 @@
+// DON'T REMOVE THESE IMPORTS!!!
+import flixel.FlxG;
+import funkin.ui.story.StoryMenuState;
+import funkin.util.SortUtil;
+import funkin.util.tools.ArrayTools;
+import funkin.util.Constants;
+import funkin.data.song.SongRegistry;
+import funkin.play.song.Song;
+import funkin.ui.story.Level;
+// Add your imports here:
+
+
+
+
+
+
+
+
+//----------------------------------------//
+//    USE THIS ONLY FOR NEW LEVELS AND    //
+//  NOT FOR OVERRIDEING EXISTING LEVELS!  //
+//----------------------------------------//
+
+class Week3Level extends Level {
+  // DON'T TOUCH THIS VARIABLE!!!
+  var _defaultData:Dynamic = null;
+  // Declare your variables here:
+
+
+
+
+
+
+	function new()
+	{
+		super("week3");
+        // In the beginning, the data is the same as the default data.
+        this._defaultData = this._data;
+        // Put here what ever you want:
+
+
+
+
+
+
+	}
+    // Declare your functions here:
+
+
+
+
+
+
+
+
+
+
+
+  //-----------------------------------------//
+  //   LEVEL DATA RELOADING DON'T TOUCH!!!   //
+  //-----------------------------------------//
+  public function reloadData(newData:Dynamic):Void {
+    // don't load the same data twice
+    if (newData == this._data) {return;}
+    this._data = newData;
+    // I won't let you hide the level from
+    // story mode if it's not already hidden.
+    this._data.visible = this._defaultData.visible;
+    // I won't let you change the songs here.
+    // changing songs in a week will be a feature
+    // for the future, and won't be done here.
+    this._data.songs = this._defaultData.songs;
+  }
+
+  //-----------------------------------------//
+  //   LEVEL DATA RELOADING DON'T TOUCH!!!   //
+  //-----------------------------------------//
+  public function resetDataToDefault():Void {
+    // resets the data to the default data
+    this._data = this._defaultData;
+  }
+
+
+  //-----------------------------------------//
+  //       DON'T EDIT THIS FUNCTION IF       //
+  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+  //-----------------------------------------//
+  public override function getSongs():Array<String> {
+    var songs = super.getSongs();
+    var forRemoval:Array<String> = [];
+    for (song in songs) {
+      if (Std.isOfType(FlxG.state, StoryMenuState)) {
+        if (!SongRegistry.instance.fetchEntry(song).hasDifficulty(FlxG.state.currentDifficultyId)) {
+          forRemoval.push(song);
+        }
+      }
+    }
+    for (song in forRemoval) {
+      songs.remove(song);
+    }
+    return songs;
+  }
+
+  // I'm using this array to track the difficulties I
+  // return in getDifficulties. I'm declaring them here
+  // because I need to access them from a bigger scope,
+  // which I apparantly can't get on the Hscript stack,
+  // which is extremely bizarre. it literally just forgets
+  // some of the variables I declared if I don't declare
+  // them as attributes here.
+  var _difficulties:Array<String> = [];
+
+  //-----------------------------------------//
+  //       DON'T EDIT THIS FUNCTION IF       //
+  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+  //-----------------------------------------//
+  public override function getDifficulties():Array<String> {
+    this._difficulties = [];
+    var song:Null<Song> = null;
+    for (songId in _data.songs) {
+      song = SongRegistry.instance.fetchEntry(songId);
+      if (song == null) {continue;}
+
+      for (diff in song.listDifficulties(null, song.variations, false, false)) {
+        ArrayTools.pushUnique(this._difficulties, diff);
+      }
+    }
+    this._difficulties.sort(this.sortingStoryDiffs);
+    return this._difficulties;
+  }
+
+  //-----------------------------------------//
+  //       DON'T EDIT THIS FUNCTION IF       //
+  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+  //-----------------------------------------//
+  // Hscript doesn't want to use bind, so I made this...
+  function sortingStoryDiffs(a:String, b:String):Int {
+    return SortUtil.defaultsThenAlphabetically(Constants.DEFAULT_DIFFICULTY_LIST, a, b);
+  }
+
+  //----------------------------------------//
+  //   IF YOU WANT TO HIDE SONG NAMES FORM  //
+  //     THE STORY MODE MENU, CHECK OUT     //
+  //     `getSongDisplayName`, NOT THIS     //
+  //----------------------------------------//
+  //-----------------------------------------//
+  //       DON'T EDIT THIS FUNCTION IF       //
+  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+  //-----------------------------------------//
+  public override function getSongDisplayNames(difficulty:String):Array<String> {
+    var songList:Array<String> = getSongs();
+    if (songList == null) {songList = [];}
+    var songNameList:Array<String> = songList.map(function(songId:String) {
+      return this.getSongDisplayName(songId, difficulty);
+    }).filter(function(songName:String) {return songName.length > 0;});
+    return songNameList;
+  }
+
+  //-----------------------------------------//
+  //       DON'T EDIT THIS FUNCTION IF       //
+  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+  //   (except for the commented out part)   //
+  //-----------------------------------------//
+  public function getSongDisplayName(songId:String, difficulty:String):String {
+    var song:Null<Song> = SongRegistry.instance.fetchEntry(songId);
+    if (song == null) {return 'Unknown';}
+    // if (song.id == "blazin" && !{{condition}}) {return '';}
+    // THIS IS HOW YOU HIDE A SONG NAME
+    // FROM STORY MODE MENU ^^^^^^^^^^^^
+    // add more of these here:
+
+
+
+    var variMeta = song._metadata.get(song.getFirstValidVariation(difficulty));
+    if (variMeta == null) {return '';}
+    return variMeta.songName;
+  }
+}

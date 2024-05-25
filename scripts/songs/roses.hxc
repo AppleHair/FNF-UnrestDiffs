@@ -1,0 +1,247 @@
+// Import what ever you want here:
+
+import funkin.play.PlayState;
+import funkin.Preferences;
+import flixel.FlxSprite;
+import funkin.graphics.FunkinSprite;
+import funkin.Paths;
+import funkin.play.PlayStatePlaylist;
+import funkin.audio.FunkinSound;
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
+import funkin.ui.options.PreferencesMenu;
+
+
+
+// DON'T REMOVE THESE IMPORTS!!!
+import flixel.FlxG;
+
+import funkin.play.song.Song;
+import funkin.data.song.SongMetadata;
+import funkin.play.song.SongDifficulty;
+import funkin.util.tools.ArrayTools;
+import funkin.util.Constants;
+
+// fill your class name
+class RosesSong extends Song {
+
+    // Set these on onCountDownStart through
+    // a module to override default behavior
+    public var hasPlayedCutscene:Bool = false;
+    public var conversationId:String = 'roses';
+    public var conversationCensoredId:String = 'roses-censored';
+    public var angrySoundPath:String = 'ANGRY';
+    public var redFadeColor:Int = 0xFFFF1B31;
+    public var redFadeBeat:Int;
+    public var doRedFade:Bool = true;
+
+    public function new(songId:String) {
+        // trace("[SONG] - Called init");
+        // trace(songId);
+
+        // fill your song id
+        super("roses");
+        // do what ever you want here:
+        // (IGNORE `songId` PARAMETER!!)
+
+
+
+
+        //   VARIATION INJECTION DOT TOUCH!!!   //
+        if (songId != "unknown") {
+            // trace("[SONG] - Receved variations");
+            var varis = songId.substr(1,songId.length-2).split(',');
+            // trace(varis);
+            var res = this.injectVariants(varis);
+            if (!res) {return null;}
+        }
+    }
+
+    // do what ever you want here:
+
+
+
+    public override function onCountdownStart(event:CountdownScriptEvent):Void {
+      super.onCountdownStart(event);
+      trace('Started countdown for Roses...');
+
+      if (!PlayStatePlaylist.isStoryMode) hasPlayedCutscene = true;
+
+      if (!hasPlayedCutscene) {
+        trace('Pausing countdown to play cutscene.');
+
+        hasPlayedCutscene = true;
+
+        event.cancel(); // CANCEL THE COUNTDOWN!
+
+        // Play a SFX
+        FunkinSound.playOnce(Paths.sound(angrySoundPath), 1.0);
+
+        PlayState.instance.currentStage.pause();
+
+        startDialogue();
+      }
+    }
+
+    function startDialogue() {
+      if (Preferences.naughtyness) {
+        trace('Playing uncensored dialogue...');
+        PlayState.instance.startConversation(conversationId);
+      } else {
+        trace('Playing censored dialogue...');
+        PlayState.instance.startConversation(conversationCensoredId);
+      }
+    }
+
+    /**
+     * Don't replay the cutscene between restarts.
+     */
+    function onSongRetry(event:ScriptEvent)
+    {
+      super.onSongRetry(event);
+
+      hasPlayedCutscene = true;
+    }
+
+    /**
+     * Replay the cutscene after leaving the song.
+     */
+    function onCreate(event:ScriptEvent):Void
+    {
+      super.onCreate(event);
+
+      hasPlayedCutscene = false;
+      redFadeColor = 0xFFFF1B31;
+      conversationId = 'roses';
+      conversationCensoredId = 'roses-censored';
+      angrySoundPath = 'ANGRY';
+      switch (PlayState.instance.currentVariation) {
+        case "default":
+          redFadeBeat = 180;
+          doRedFade = true;
+        case "erect":
+          redFadeBeat = 207;
+          doRedFade = true;
+        default:
+          doRedFade = false;
+      }
+    }
+
+    function onBeatHit(event:SongTimeScriptEvent)
+    {
+      // When overriding onBeatHit, make sure to call super.onBeatHit,
+      // otherwise boppers will not work.
+      super.onBeatHit(event);
+
+      if (event.beat == this.redFadeBeat && this.doRedFade && PlayStatePlaylist.isStoryMode) {
+        trace('Hit end of song! Starting outro.');
+
+        PlayState.instance.camCutscene.visible = true;
+
+        var red = new FunkinSprite(-20, -20).makeSolidColor(FlxG.width * 1.5, FlxG.height * 1.5, redFadeColor);
+        red.cameras = [PlayState.instance.camCutscene];
+
+        red.alpha = 0.0;
+        FlxTween.tween(PlayState.instance.camHUD, {alpha: 0.0}, 1.5, {ease: FlxEase.linear});
+        FlxTween.tween(red, {alpha: 1.0}, 2.0, {ease: FlxEase.linear});
+        PlayState.instance.add(red);
+      }
+    }
+
+    public override function onDialogueEnd() {
+      // We may need to wait for the outro to play.
+      Countdown.performCountdown();
+    }
+
+
+
+
+    //-------------------------------------//
+    //    DOT TOUCH `injectVariants`!!!    //
+    //-------------------------------------//
+
+    public function injectVariants(varis:Array<String>):Bool {
+        for (vari in varis) {
+            var variMeta:Null<SongMetadata> = this.fetchVariationMetadata(this.id, vari);
+            if (variMeta == null) {
+                FlxG.log.warn('[SONG] Failed to load variation metadata ('+this.id+':'+vari+'), is the path correct?');
+                trace('[SONG]  FAILED to load variation: '+vari);
+                return false;
+            }
+            this._metadata.set(variMeta.variation, variMeta);
+            trace('[SONG]  Loaded variation: '+vari);
+        }
+        this.populateDifficulties();
+        return true;
+    }
+
+    //---------------------------------------//
+    //    IF YOU EDIT `listDifficulties`,    //
+    //    IGNORE `variationIds` PARAMETER    //
+    //            AT ALL COSTS!!!            //
+    //---------------------------------------//
+
+    public override function listDifficulties(?variationId:String,
+        ?variationIds:Array<String>, showLocked:Bool = false,
+        showHidden:Bool = false):Array<String>
+    {
+        return super.listDifficulties(variationId,this.variations,showLocked,showHidden);
+    }
+
+    //---------------------------------------//
+    //      IF YOU EDIT `getDifficulty`      //
+    //     IGNORE `variations` PARAMETER     //
+    //            AT ALL COSTS!!!            //
+    //---------------------------------------//
+
+    public override function getDifficulty(?diffId:String, ?variation:String,
+        ?variations:Array<String>):Null<SongDifficulty>
+    {
+        if (diffId == null) {diffId = listDifficulties(variation)[0];}
+        tryVariationId = this.getFirstValidVariation(diffId);
+        if (tryVariationId == null) {return  null;}
+        if (variation == null) {variation = tryVariationId;}
+
+        var variationSuffix = (variation != Constants.DEFAULT_VARIATION) ? '-'+variation : '';
+
+        if (difficulties.exists(diffId+variationSuffix)) {
+            return difficulties.get(diffId+variationSuffix);
+        }
+        return (variation == tryVariationId ? null : this.getDifficulty(diffId));
+    }
+
+    //-------------------------------------------//
+    //   IF YOU EDIT `getFirstValidVariation`,   //
+    //   IGNORE `possibleVariations` PARAMETER   //
+    //              AT ALL COSTS!!!              //
+    //-------------------------------------------//
+
+    public override function getFirstValidVariation(?diffId:String,
+        ?possibleVariations:Array<String>):Null<String>
+    {
+        return super.getFirstValidVariation(diffId);
+    }
+
+    //---------------------------------------//
+    //      IF YOU EDIT `hasDifficulty`      //
+    //    IGNORE `variationIds` PARAMETER    //
+    //            AT ALL COSTS!!!            //
+
+    // (NOTE: This function is unused in the //
+    //  game's code on 0.3.2, but it might   //
+    //  get reused in the future)            //
+    //---------------------------------------//
+
+    public override function hasDifficulty(diffId:String,
+        ?variationId:String, ?variationIds:Array<String>):Bool
+    {
+        tryVariationId = this.getFirstValidVariation(diffId);
+        if (tryVariationId == null) {return false;}
+        if (variationId == null) {variationId = tryVariationId;}
+
+        variationIds = null;
+
+        var variationSuffix = (variationId != Constants.DEFAULT_VARIATION) ? '-'+variationId : '';
+        return this.difficulties.exists(diffId+variationSuffix);
+    }
+}

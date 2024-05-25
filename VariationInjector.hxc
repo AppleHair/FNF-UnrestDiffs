@@ -1,0 +1,357 @@
+import haxe.ds.ArraySort;
+
+import funkin.modding.module.Module;
+
+import funkin.save.Save;
+
+import funkin.play.song.Song;
+import funkin.play.song.ScriptedSong;
+import funkin.play.song.SongDifficulty;
+
+import funkin.modding.PolymodErrorHandler;
+
+import funkin.ui.freeplay.FreeplayState;
+
+import funkin.data.song.SongRegistry;
+import funkin.data.song.SongMetadata;
+
+import funkin.util.tools.ArrayTools;
+import funkin.util.Constants;
+
+class VariationInjector extends Module {
+
+	public function new()
+	{
+		super('vari-injector');
+        this.priority = 0;
+        if (Save.instance.modOptions.exists("lastinjectedvaris")) {
+            this.variationInjections = Save.instance.modOptions.get("lastinjectedvaris");
+        }
+
+        Constants.DEFAULT_DIFFICULTY_LIST = ["easy","normal","hard","erect","nightmare"];
+        Constants.DEFAULT_DIFFICULTY_LIST_FULL = ["easy","normal","hard","erect","nightmare"];
+	}
+
+    var variationInjections:Array<Array<Array<String>>> = [[], []];
+
+    public var difficultySorting:Array<Array<String>> = [
+        ["easy","normal","hard","erect","nightmare"],
+        ["1","3","5","7","9"]
+    ];
+
+    // Difficulties and variations MUST have
+    // a One-to-many relationship, meaning that
+    // a variation can have many difficulties,
+    // but a difficulty can have ONE variation.
+    // This rule applies to all difficulties, except
+    // for hidden ones (like "picospeaker") which exist
+    // only in the chart files, and are not shown in game
+    public var difficultiesToVariations:Array<Array<String>> = [
+        ["easy","normal","hard","erect","nightmare"],
+        ["default","default","default","erect","erect"]
+    ];
+
+    public override function onCreate(event:ScriptEvent):Void {
+        this.variationInjections = [[], []];
+    }
+
+    public function injectVariationToSong(variId:String, songId:String):Void {
+        if (SongRegistry.instance.fetchEntry(songId).variations.contains(variId)) {return;}
+        var index:Null<Int> = null;
+        for (i in 0...this.variationInjections[0].length) {
+            if (this.variationInjections[0][i][0] == songId) {
+                index = i;
+                break;
+            }
+        }
+        if(index == null) {
+            index = this.variationInjections[0].length;
+            this.variationInjections[0].push([songId]);
+            this.variationInjections[1].push([]);
+        }
+        // don't inject the same variation twice
+        if (this.variationInjections[1][index].contains(variId)) {return;}
+        this.variationInjections[1][index].push(variId);
+        trace("[vari-injector]  -  Receved variation injection request ("+variId+" => "+songId+")\n");
+        trace(this.variationInjections+'\n');
+    }
+
+    public function injectVariationToBase(variId:String, ?weekend:Bool = false):Void {
+        for (songId in SongRegistry.instance.listBaseGameSongIds()) {
+            // we break the loop if we get to the first song in weekend1
+            // (darnell), and we don't want to inject the variation to weekend1.
+            if (songId == "darnell" && !weekend) {
+                break;
+            }
+            this.injectVariationToSong(variId, songId);
+        }
+    }
+
+    var injected:Bool = false;
+
+    // I'm using these variables to sort and validate the difficulties.
+    // I'm declaring them here because I need to access them
+    // from a bigger scope, which I apparantly can't get on
+    // the Hscript stack, which is extremely bizarre.
+    // it literally just forgets some of the variables
+    // I declared if I don't declare them as attributes here.
+    var variSORT:String = "";
+    var ratingsSORT:Map<String, Int> = null;
+    var difficultiesSORT:Array<String> = [];
+    var forRemovalDiffSORT:Array<String> = [];
+    var forRemovalVariSORT:Array<String> = [];
+    var songSORT:Song = null;
+
+    function sortDifficulties(a:String, b:String):Int {
+        var numA:Int = Std.parseInt(this.difficultySorting[1][this.difficultySorting[0].indexOf(a)]);
+        var numB:Int = Std.parseInt(this.difficultySorting[1][this.difficultySorting[0].indexOf(b)]);
+        if (numA < numB) {
+            return -1;
+        }
+        if (numA > numB) {
+            return 1;
+        }
+        return 0;
+    }
+
+    public override function onStateChangeBegin(event:StateChangeScriptEvent):Void {
+        if (injected) {return;}
+        var songId:String;
+        var variations:Array<String>;
+        var songClassName:Null<String>;
+        var entry:Null<Song>;
+        for (songIndex in 0...this.variationInjections[0].length) {
+            songId = this.variationInjections[0][songIndex][0];
+            variations = this.variationInjections[1][songIndex];
+            songClassName = SongRegistry.instance.getScriptedEntryClassName(songId);
+            if (songClassName == null) {
+                trace('[vari-injector]  -  Failed to inject variations to song,'+
+                    ' because it didn\'t have a scripted class ('+songId+')');
+                continue;
+            }
+
+            entry = ScriptedSong.init(songClassName, variations);
+
+            if (entry != null) {
+                trace('[vari-injector]  -  Successfully injected variations to song '+
+                    '('+variations+' => '+songId+')');
+                SongRegistry.instance.entries.set(songId, entry);
+                SongRegistry.instance.scriptedEntryIds.set(songId, songClassName);
+                continue;
+            }
+            trace('[vari-injector]  -  Failed to inject variations to song ('+songClassName+')');
+        }
+        Save.instance.modOptions.set("lastinjectedvaris", this.variationInjections);
+        Save.instance.flush();
+        trace("[vari-injector]  -  Successfully finished injecting variations");
+
+
+        for (songIdSORT in SongRegistry.instance.listBaseGameSongIds().concat(SongRegistry.instance.listModdedSongIds())) {
+            songSORT = SongRegistry.instance.fetchEntry(songIdSORT);
+            forRemovalVariSORT = [];
+            for (vari in songSORT.variations) {
+                variSORT = vari;
+                ratingsSORT = songSORT._metadata.get(variSORT).playData.ratings;
+                difficultiesSORT = songSORT._metadata.get(variSORT).playData.difficulties;
+                forRemovalDiffSORT = [];
+                for (diff in difficultiesSORT) {
+                    if (difficultiesToVariations[0].contains(diff)) {
+                        if (difficultiesToVariations[1][difficultiesToVariations[0].indexOf(diff)] != variSORT) {
+                            var differentVari = difficultiesToVariations[1][difficultiesToVariations[0].indexOf(diff)];
+                            PolymodErrorHandler.showAlert("Variation-Difficulty Relationship Error", "Tried to add"+
+                                " a difficulty ("+diff+") to a variation ("+variSORT+"), but the difficulty already had"+
+                                " a different variation assigned to it ("+differentVari+") (on song: "+songSORT.id+").");
+                            forRemovalDiffSORT.push(diff);
+                            continue;
+                        }
+                    } else {
+                        difficultiesToVariations[0].push(diff);
+                        difficultiesToVariations[1].push(variSORT);
+                    }
+                    if (!Constants.DEFAULT_DIFFICULTY_LIST.contains(diff) && ratingsSORT.exists(diff)) {
+                        Constants.DEFAULT_DIFFICULTY_LIST.push(diff);
+                        difficultySorting[0].push(diff);
+                        difficultySorting[1].push(ratingsSORT.get(diff));
+                        ArraySort.sort(Constants.DEFAULT_DIFFICULTY_LIST, sortDifficulties);
+                    }
+                }
+                for (diff in forRemovalDiffSORT) {
+                    difficultiesSORT.remove(diff);
+                    var variationSuffix:String = (variSORT != Constants.DEFAULT_VARIATION) ? '-'+variSORT : '';
+                    songSORT.difficulties.remove(diff+variationSuffix);
+                }
+                if (difficultiesSORT.length == 0) {
+                    forRemovalVariSORT.push(variSORT);
+                }
+            }
+            for (vari in forRemovalVariSORT) {
+                songSORT.variations.remove(vari);
+                songSORT._metadata.remove(vari);
+            }
+        }
+        Constants.DEFAULT_VARIATION_LIST = ArrayTools.unique(difficultiesToVariations[1]);
+
+        injected = true;
+    }
+
+    var freeplayState:FreeplayState = null;
+
+    public override function onSubStateOpenEnd(event:SubStateScriptEvent):Void {
+        if (Std.isOfType(event.targetState, FreeplayState)) {
+            freeplayState = event.targetState;
+        }
+    }
+
+    public override function onUpdate(event:UpdateScriptEvent):Void {
+        if (freeplayState != null) {
+            ArraySort.sort(freeplayState.diffIdsTotal,sortDifficulties);
+            freeplayState = null;
+        }
+    }
+}
+
+// In order for this to work, the base
+// song's script needs to use the
+// following template:
+
+
+/*TEMPLATE START
+// Import what ever you want here:
+
+
+
+
+
+// DON'T REMOVE THESE IMPORTS!!!
+import flixel.FlxG;
+
+import funkin.play.song.Song;
+import funkin.data.song.SongMetadata;
+import funkin.play.song.SongDifficulty;
+import funkin.util.tools.ArrayTools;
+import funkin.util.Constants;
+
+// fill your class name
+class {{Song's Name}} extends Song {
+
+    public function new(songId:String) {
+        // trace("[SONG] - Called init");
+        // trace(songId);
+
+        // fill your song id
+        super("{{song's Id}}");
+        // do what ever you want here:
+        // (IGNORE `songId` PARAMETER!!)
+
+
+
+
+        //   VARIATION INJECTION DOT TOUCH!!!   //
+        if (songId != "unknown") {
+            // trace("[SONG] - Receved variations");
+            var varis = songId.substr(1,songId.length-2).split(',');
+            // trace(varis);
+            var res = this.injectVariants(varis);
+            if (!res) {return null;}
+        }
+    }
+
+    // do what ever you want here:
+
+
+
+
+
+
+
+
+    //-------------------------------------//
+    //    DOT TOUCH `injectVariants`!!!    //
+    //-------------------------------------//
+
+    public function injectVariants(varis:Array<String>):Bool {
+        for (vari in varis) {
+            var variMeta:Null<SongMetadata> = this.fetchVariationMetadata(this.id, vari);
+            if (variMeta == null) {
+                FlxG.log.warn('[SONG] Failed to load variation metadata ('+this.id+':'+vari+'), is the path correct?');
+                trace('[SONG]  FAILED to load variation: '+vari);
+                return false;
+            }
+            this._metadata.set(variMeta.variation, variMeta);
+            trace('[SONG]  Loaded variation: '+vari);
+        }
+        this.populateDifficulties();
+        return true;
+    }
+
+    //---------------------------------------//
+    //    IF YOU EDIT `listDifficulties`,    //
+    //    IGNORE `variationIds` PARAMETER    //
+    //            AT ALL COSTS!!!            //
+    //---------------------------------------//
+
+    public override function listDifficulties(?variationId:String,
+        ?variationIds:Array<String>, showLocked:Bool = false,
+        showHidden:Bool = false):Array<String>
+    {
+        return super.listDifficulties(variationId,this.variations,showLocked,showHidden);
+    }
+
+    //---------------------------------------//
+    //      IF YOU EDIT `getDifficulty`      //
+    //     IGNORE `variations` PARAMETER     //
+    //            AT ALL COSTS!!!            //
+    //---------------------------------------//
+
+    public override function getDifficulty(?diffId:String, ?variation:String,
+        ?variations:Array<String>):Null<SongDifficulty>
+    {
+        if (diffId == null) {diffId = listDifficulties(variation)[0];}
+        tryVariationId = this.getFirstValidVariation(diffId);
+        if (tryVariationId == null) {return false;}
+        if (variation == null) {variation = tryVariationId;}
+
+        var variationSuffix = (variation != Constants.DEFAULT_VARIATION) ? '-'+variation : '';
+
+        if (difficulties.exists(diffId+variationSuffix)) {
+            return difficulties.get(diffId+variationSuffix);
+        }
+        return null;
+    }
+
+    //-------------------------------------------//
+    //   IF YOU EDIT `getFirstValidVariation`,   //
+    //   IGNORE `possibleVariations` PARAMETER   //
+    //              AT ALL COSTS!!!              //
+    //-------------------------------------------//
+
+    public override function getFirstValidVariation(?diffId:String,
+        ?possibleVariations:Array<String>):Null<String>
+    {
+        return super.getFirstValidVariation(diffId);
+    }
+
+    //---------------------------------------//
+    //      IF YOU EDIT `hasDifficulty`      //
+    //    IGNORE `variationIds` PARAMETER    //
+    //            AT ALL COSTS!!!            //
+
+    // (NOTE: This function is unused in the //
+    //  game's code on 0.3.2, but it might   //
+    //  get reused in the future)            //
+    //---------------------------------------//
+
+    public override function hasDifficulty(diffId:String,
+        ?variationId:String, ?variationIds:Array<String>):Bool
+    {
+        tryVariationId = this.getFirstValidVariation(diffId);
+        if (tryVariationId == null) {return false;}
+        if (variationId == null) {variationId = tryVariationId;}
+
+        variationIds = null;
+
+        var variationSuffix = (variationId != Constants.DEFAULT_VARIATION) ? '-'+variationId : '';
+        return this.difficulties.exists(diffId+variationSuffix);
+    }
+}
+*/// TEMPLATE END

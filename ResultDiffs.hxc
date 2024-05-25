@@ -1,0 +1,72 @@
+import flixel.FlxG;
+
+import openfl.utils.Assets;
+
+import funkin.modding.module.Module;
+
+import funkin.util.Constants;
+
+import funkin.play.ResultState;
+import funkin.play.PlayState;
+
+import funkin.Paths;
+import funkin.Preferences;
+
+
+class ResultDiffs extends Module {
+	public function new()
+	{
+		super('result-diffs');
+        this.priority = 1;
+	}
+
+	var justEnteredResultScreen:Bool = false;
+
+	var alreadyRanOnce:Bool = false;
+
+	public override function onSongEnd(event:ScriptEvent):Void {
+		this.alreadyRanOnce = false;
+	}
+
+  public override function onUpdate(event:UpdateScriptEvent):Void {
+		if (Std.isOfType(FlxG.state.subState, ResultState) && !this.justEnteredResultScreen && !this.alreadyRanOnce) {
+            this.justEnteredResultScreen = true;
+            //trace('ResultDiffs ON');
+			//trace(PlayState.instance.currentDifficulty);
+        } else if (this.justEnteredResultScreen) {
+			//trace('ResultDiffs OFF');
+			this.justEnteredResultScreen = false;
+		} else {return;}
+
+        if (!this.justEnteredResultScreen) {return;}
+
+		// WHEN THE RESULT SCREEN OPENS IN THE END OF A SONG:
+
+		// If the difficulty already has an result screen image in the base game, don't change it
+		if (Constants.DEFAULT_DIFFICULTY_LIST_FULL.contains(PlayState.instance.currentDifficulty)) {return;}
+
+		// get the previous height and width of the difficulty image
+		var prvHeight = FlxG.state.subState.difficulty.height;
+		var prvWidth = FlxG.state.subState.difficulty.width;
+
+		// build the path to the new difficulty image
+		var path = "resultScreen/difficulties/" + PlayState.instance.currentDifficulty;
+		// trace(path);
+
+		// if an xml exists, load the image as a sparrow atlas
+		if (Assets.exists(Paths.file('shared/images/'+path+'.xml'))) {
+      		FlxG.state.subState.difficulty.frames = Paths.getSparrowAtlas(path);
+      		FlxG.state.subState.difficulty.animation.addByPrefix('idle', 'idle', 24, true);
+      		if (Preferences.flashingLights) {FlxG.state.subState.difficulty.animation.play('idle');}
+		// otherwise if an image exists, load the image as a normal image
+    	} else if (Assets.exists(Paths.image(path))) {
+      		FlxG.state.subState.difficulty.loadGraphic(Paths.image(path));
+    	} // if the image doesn't exist, the default image will be used (resultScreen/difNormal.png)
+
+		// update positions to fit correctly after changing the image
+		FlxG.state.subState.difficulty.y += prvHeight - FlxG.state.subState.difficulty.height;
+		FlxG.state.subState.songName.x -= prvWidth - FlxG.state.subState.difficulty.width;
+
+		this.alreadyRanOnce = true;
+    }
+}
