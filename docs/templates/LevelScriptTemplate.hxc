@@ -53,6 +53,12 @@ class LevelName extends Level {
   	//-----------------------------------------//
   	//   LEVEL DATA RELOADING DON'T TOUCH!!!   //
   	//-----------------------------------------//
+  	/**
+  	 * Reloads the data of the level with new data,
+	 * while keeping the default data, so we could
+	 * reuse it later.
+  	 * @param newData The level data to load.
+  	 */
   	public function reloadData(newData:Dynamic):Void {
     	// don't load the same data twice
     	if (newData == this._data) {return;}
@@ -68,22 +74,45 @@ class LevelName extends Level {
   	//-----------------------------------------//
   	//   LEVEL DATA RELOADING DON'T TOUCH!!!   //
   	//-----------------------------------------//
+  	/**
+  	 * Resets the data of the level to the default data.
+	 * Used by the story-diffs module to reset the data
+	 * when an alt level data can't be found for the
+	 * current variation or difficulty.
+  	 */
   	public function resetDataToDefault():Void {
     	// resets the data to the default data
     	this._data = this._defaultData;
   	}
 
+	//-----------------------------------------//
+  	//   LEVEL DATA RELOADING DON'T TOUCH!!!   //
+  	//-----------------------------------------//
+	/**
+	 * Consider adding songs to the level's song list.
+	 * @param songs The list of song IDs to consider adding.
+	 */
 	public function considerAddingSongs(songs:Array<String>):Void {
 		if (songs == null) {return;}
+		// the song list needs to have all the songs the level
+		// already has, and if the level already has all the songs
+		// in the song list, we don't need to add them again.
 		if (ArrayTools.isSuperset(this._defaultData.songs,songs) ||
 			!ArrayTools.isSuperset(songs, this._data.songs)) {return;}
 
+		// we'll use this array as a queue, where song's
+		// from the songs array will be added to the queue
+		// while we iterate through it.
 		var accumulatedSongsQueue:Array<String> = [];
 		for (songId in songs) {
+			// if the song isn't already in the
+			// level's song list, add it to the queue.
 			if (this._defaultData.songs.indexOf(songId) == -1) {
 				accumulatedSongsQueue.push(songId);
 				continue;
 			}
+			// otherwise, insert the songs accumulated in the queue
+			// behind the current song in the default songs list.
 			while (accumulatedSongsQueue.length > 0) {
 				this._defaultData.songs.insert(
 					this._defaultData.songs.indexOf(songId),
@@ -91,9 +120,29 @@ class LevelName extends Level {
 				);
 			}
 		}
+		// push all the remaining songs from the
+		// queue to the end of the default songs list.
 		while (accumulatedSongsQueue.length > 0) {
 			this._defaultData.songs.push(accumulatedSongsQueue.shift());
 		}
+
+		// using this method, we can add songs to the
+		// level's song list while keeping the intended
+		// order of the songs in the list, and without
+		// having to worry about adding songs that are
+		// already in the list.
+
+		// Note that it's your responsibility to make sure
+		// the songs appear only in the variations/difficulties
+		// you want them to appear in, because added songs
+		// will appear for all the difficulties they have,
+		// regardless of the variation or difficulty associated 
+		// with the alt level data which added them. This is
+		// especially important if you don't want your song 
+		// to appear in the default variation, because the 
+		// game normally forces you to have a default variation,
+		// but you can still remove it using a song script 
+		// after the song gets constructed (new()).
 	}
 
   	//-----------------------------------------//
@@ -133,14 +182,14 @@ class LevelName extends Level {
 		// back to the main menu.
   	}
 
-  	// I'm using this array to track the difficulties I
-  	// return in getDifficulties. I'm declaring them here
-  	// because I need to access them from a bigger scope,
-  	// which I apparantly can't get on the Hscript stack,
-  	// which is extremely bizarre. It literally just forgets
-  	// some of the variables I declared if I don't declare
-  	// them as attributes here.
+
 	// DON'T TOUCH THIS VARIABLE!!!
+	// I have to declare it here because
+	// Hscript forgets it too quickly if I don't.
+  	/**
+  	 * I'm using this array to track the difficulties I
+  	 * return in getDifficulties.
+  	 */
   	var _difficulties:Array<String> = [];
 
   	//-----------------------------------------//
@@ -194,12 +243,17 @@ class LevelName extends Level {
   	//       DON'T EDIT THIS FUNCTION IF       //
   	//    YOU DON'T KNOW WHAT YOU'RE DOING!    //
   	//-----------------------------------------//
-  	// Hscript doesn't want to use bind, so I made this...
+  	/**
+  	 * uses the default difficulty list to sort the difficulties
+	 * (this list gets modified by the variation injector in order
+	 * to implement the difficulty "rating" system, which sorts the
+	 * difficulties according to their "playData.ratings" numbers)
+  	 * @param a a member of the sorted array
+  	 * @param b another member of the sorted array
+  	 * @return Int
+  	 */
   	function sortingStoryDiffs(a:String, b:String):Int {
-		// uses the default difficulty list to sort the difficulties
-		// (this list gets modified by the variation injector in order
-		// to implement the difficulty "rating" system, which sorts the
-		// difficulties according to their "playData.ratings" numbers)
+		// Hscript doesn't want to use bind, so I made this...
     	return SortUtil.defaultsThenAlphabetically(Constants.DEFAULT_DIFFICULTY_LIST, a, b);
   	}
 

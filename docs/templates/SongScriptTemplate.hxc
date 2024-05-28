@@ -48,6 +48,18 @@ class SongName extends Song {
     //--------------------------------------//
     //     DOT TOUCH `injectVariation`!!!   //
     //--------------------------------------//
+    /**
+     * Tries to injects a new variation into the song.
+	 * Returns true if the variation was successfully injected,
+	 * and false if the variation failed to inject. Used by the
+	 * variation injector when injecting new variations into the
+	 * different songs according to the provided injection data
+	 * files, while making sure the sorting is done correctly
+	 * and the relationship between variations and difficulties
+	 * is One-to-many.
+     * @param vari the variation id to inject.
+     * @return Bool
+     */
     public function injectVariation(vari:String):Bool {
 		// fetch the requested variation's
 		// metadata for the song
