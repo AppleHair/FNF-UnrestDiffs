@@ -26,11 +26,11 @@ import funkin.util.tools.ArrayTools;
  */
 class VariationInjector extends Module {
 
-	public function new()
-	{
-		super('vari-injector');
+    public function new()
+    {
+        super('vari-injector');
         this.priority = 0;
-	}
+    }
     
     public var difficultySorting:Array<Array<String>> = [
         ["easy","normal","hard","erect","nightmare"],

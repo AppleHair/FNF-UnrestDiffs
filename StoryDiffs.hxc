@@ -32,11 +32,11 @@ import funkin.audio.FunkinSound;
  * the template on docs/templates/LevelScriptTemplate.hxc
  */
 class StoryDiffs extends Module {
-	public function new()
-	{
-		super('story-diffs');
+    public function new()
+    {
+        super('story-diffs');
         this.priority = 1;
-	}
+    }
 
     var storyMenu:StoryMenuState = null;
 
