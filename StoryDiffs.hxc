@@ -168,7 +168,6 @@ class StoryDiffs extends Module {
 
     public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
         // trace('called onStateChangeEnd');
-        // trace(Type.typeof(event.targetState));
         if (Std.isOfType(event.targetState, StoryMenuState)) {
             this.storyMenu = event.targetState;
             this.justEnteredStoryMenu = true;
