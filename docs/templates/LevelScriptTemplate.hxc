@@ -47,7 +47,12 @@ class LevelName extends Level {
 
 
 
-    // DON'T TOUCH THIS VARIABLE!!!
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    /**
+     * Used to store the default data of the level,
+     * so we can reset the data to the default data
+     * after loading alt level data.
+     */
     var _defaultData:Dynamic = null;
 
     //-----------------------------------------//
@@ -183,7 +188,7 @@ class LevelName extends Level {
     }
 
 
-    // DON'T TOUCH THIS VARIABLE!!!
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
     // I have to declare it here because
     // Hscript forgets it too quickly if I don't.
     /**

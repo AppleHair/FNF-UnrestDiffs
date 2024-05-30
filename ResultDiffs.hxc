@@ -1,44 +1,50 @@
 import flixel.FlxG;
-
+import funkin.modding.module.Module;
+import funkin.Paths;
+import funkin.play.PlayState;
+import funkin.play.ResultState;
+import funkin.Preferences;
+import funkin.util.Constants;
 import openfl.utils.Assets;
 
-import funkin.modding.module.Module;
-
-import funkin.util.Constants;
-
-import funkin.play.ResultState;
-import funkin.play.PlayState;
-
-import funkin.Paths;
-import funkin.Preferences;
-
-
+/**
+ * When adding a new difficulty sprite to
+ * the result screen, you need to add the
+ * difficulty image to this path:
+ * `shared/images/resultScreen/difficulties`
+ * If you want to use a sparrow atlas, you
+ * need to add the xml file with the same
+ * name as the image file and in the same
+ * folder and the prefix of the animation
+ * must be named `idle`.
+ */
 class ResultDiffs extends Module {
-    public function new()
+
+    function new()
     {
-        super('result-diffs');
-        this.priority = 1;
+        super('result-diffs', 1);
     }
 
-    var justEnteredResultScreen:Bool = false;
-
-    var alreadyRanOnce:Bool = false;
+    // Used for tracking result screen on update.
+    // PLEASE DON'T MODIFY THESE VARIABLES!!!
+    var _justEnteredResultScreen:Bool = false;
+    var _alreadyRanOnce:Bool = false;
 
     public override function onSongEnd(event:ScriptEvent):Void {
-        this.alreadyRanOnce = false;
+        this._alreadyRanOnce = false;
     }
 
-  public override function onUpdate(event:UpdateScriptEvent):Void {
-        if (Std.isOfType(FlxG.state.subState, ResultState) && !this.justEnteredResultScreen && !this.alreadyRanOnce) {
-            this.justEnteredResultScreen = true;
+    public override function onUpdate(event:UpdateScriptEvent):Void {
+        if (Std.isOfType(FlxG.state.subState, ResultState) && !this._justEnteredResultScreen && !this._alreadyRanOnce) {
+            this._justEnteredResultScreen = true;
             //trace('ResultDiffs ON');
             //trace(PlayState.instance.currentDifficulty);
-        } else if (this.justEnteredResultScreen) {
+        } else if (this._justEnteredResultScreen) {
             //trace('ResultDiffs OFF');
-            this.justEnteredResultScreen = false;
+            this._justEnteredResultScreen = false;
         } else {return;}
 
-        if (!this.justEnteredResultScreen) {return;}
+        if (!this._justEnteredResultScreen) {return;}
 
         // WHEN THE RESULT SCREEN OPENS IN THE END OF A SONG:
 
@@ -67,6 +73,6 @@ class ResultDiffs extends Module {
         FlxG.state.subState.difficulty.y += prvHeight - FlxG.state.subState.difficulty.height;
         FlxG.state.subState.songName.x -= prvWidth - FlxG.state.subState.difficulty.width;
 
-        this.alreadyRanOnce = true;
+        this._alreadyRanOnce = true;
     }
 }

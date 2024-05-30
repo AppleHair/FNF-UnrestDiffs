@@ -1,23 +1,13 @@
-import haxe.ds.ArraySort;
-
-import funkin.modding.module.Module;
-
-import funkin.save.Save;
-
-import funkin.play.song.Song;
-import funkin.play.song.ScriptedSong;
-import funkin.play.song.SongDifficulty;
-
-import funkin.modding.PolymodErrorHandler;
-
-import funkin.ui.freeplay.FreeplayState;
-
+// TODO: Add more comments to this file
 import funkin.data.song.SongRegistry;
-import funkin.data.song.SongMetadata;
-
+import funkin.modding.module.Module;
+import funkin.modding.PolymodErrorHandler;
+import funkin.play.song.Song;
+import funkin.ui.freeplay.FreeplayState;
 import funkin.util.Constants;
 import funkin.util.DataAssets;
 import funkin.util.tools.ArrayTools;
+import haxe.ds.ArraySort;
 
 /**
  * In order for this to work, the base
@@ -26,16 +16,13 @@ import funkin.util.tools.ArrayTools;
  */
 class VariationInjector extends Module {
 
-    public function new()
+    function new()
     {
-        super('vari-injector');
-        this.priority = 0;
+        super('vari-injector', 0);
     }
-    
-    public var difficultySorting:Array<Array<String>> = [
-        ["easy","normal","hard","erect","nightmare"],
-        ["1","3","5","7","9"]
-    ];
+
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    var _VART_INJECT_PATH_PREFIX:String = "UD/injections/variations/";
 
     // Difficulties and variations MUST have
     // a One-to-many relationship, meaning that
@@ -44,32 +31,45 @@ class VariationInjector extends Module {
     // This rule applies to all difficulties, except
     // for hidden ones (like "picospeaker") which exist
     // only in the chart files, and are not shown in game
-    public var difficultiesToVariations:Array<Array<String>> = [
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    var _difficultiesToVariations:Array<Array<String>> = [
         ["easy","normal","hard","erect","nightmare"],
         ["default","default","default","erect","erect"]
     ];
+    
+    public var difficultiesToVariations(get, never):Array<Array<String>>;
+    function get_difficultiesToVariations():Array<Array<String>> {
+        return ArrayTools.deepClone(_difficultiesToVariations);
+    }
+    
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    var _difficultySorting:Array<Array<String>> = [
+        ["easy","normal","hard","erect","nightmare"],
+        ["1","3","5","7","9"]
+    ];
 
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    /**
+     * Used for tracking setup completion.
+     */
+    var _finishedSetup:Bool = false;
 
-    var variInjectPathPrefix:String = "UD/injections/variations/";
-
-    var finishedSetup:Bool = false;
-
-    // I'm using these variables to sort and validate the difficulties.
-    // I'm declaring them here because I need to access them
-    // from a bigger scope, which I apparantly can't get on
-    // the Hscript stack, which is extremely bizarre.
-    // it literally just forgets some of the variables
-    // I declared if I don't declare them as attributes here.
-    var variSORT:String = "";
-    var ratingsSORT:Map<String, Int> = null;
-    var difficultiesSORT:Array<String> = [];
-    var forRemovalDiffSORT:Array<String> = [];
-    var forRemovalVariSORT:Array<String> = [];
-    var songSORT:Song = null;
+    
+    // I have to declare them here because
+    // Hscript forgets them too quickly if I don't.
+    // I'm using these variables to sort and validate
+    // the difficulties on setup.
+    // PLEASE DON'T MODIFY THESE VARIABLES!!!
+    var _variSORT:String = "";
+    var _ratingsSORT:Map<String, Int> = null;
+    var _difficultiesSORT:Array<String> = [];
+    var _forRemovalDiffSORT:Array<String> = [];
+    var _forRemovalVariSORT:Array<String> = [];
+    var _songSORT:Song = null;
 
     function sortDifficulties(a:String, b:String):Int {
-        var numA:Int = Std.parseInt(this.difficultySorting[1][this.difficultySorting[0].indexOf(a)]);
-        var numB:Int = Std.parseInt(this.difficultySorting[1][this.difficultySorting[0].indexOf(b)]);
+        var numA:Int = Std.parseInt(this._difficultySorting[1][this._difficultySorting[0].indexOf(a)]);
+        var numB:Int = Std.parseInt(this._difficultySorting[1][this._difficultySorting[0].indexOf(b)]);
         if (numA < numB) {
             return -1;
         }
@@ -98,10 +98,10 @@ class VariationInjector extends Module {
     }
 
     function setup():Void {
-        if (finishedSetup) {return;}
+        if (_finishedSetup) {return;}
 
         // gets all the variation injection files
-        var variIdList:Array<String> = DataAssets.listDataFilesInPath(variInjectPathPrefix, '.json').map(
+        var variIdList:Array<String> = DataAssets.listDataFilesInPath(_VART_INJECT_PATH_PREFIX, '.json').map(
             function(variInjectPath:String):String {
                 return variInjectPath.split('/')[0];
             }
@@ -117,7 +117,7 @@ class VariationInjector extends Module {
         // parse it and inject the variation to
         // each song that needs it.
         for (variId in variIdList) {
-            var path:String = variInjectPathPrefix+variId+'.json';
+            var path:String = _VART_INJECT_PATH_PREFIX+variId+'.json';
             parser.fromJson(StringTools.trim(Assets.getText(path)), path);
             for (error in parser.errors)
             {
@@ -138,52 +138,52 @@ class VariationInjector extends Module {
         Constants.DEFAULT_DIFFICULTY_LIST = ["easy","normal","hard","erect","nightmare"];
 
         for (songIdSORT in SongRegistry.instance.listBaseGameSongIds().concat(SongRegistry.instance.listModdedSongIds())) {
-            songSORT = SongRegistry.instance.fetchEntry(songIdSORT);
-            songSORT.difficulties.clear();
-            songSORT.populateDifficulties();
-            forRemovalVariSORT = [];
-            for (vari in songSORT.variations) {
-                variSORT = vari;
-                ratingsSORT = songSORT._metadata.get(variSORT).playData.ratings;
-                difficultiesSORT = songSORT._metadata.get(variSORT).playData.difficulties;
-                forRemovalDiffSORT = [];
-                for (diff in difficultiesSORT) {
-                    if (difficultiesToVariations[0].contains(diff)) {
-                        if (difficultiesToVariations[1][difficultiesToVariations[0].indexOf(diff)] != variSORT) {
-                            var differentVari = difficultiesToVariations[1][difficultiesToVariations[0].indexOf(diff)];
+            _songSORT = SongRegistry.instance.fetchEntry(songIdSORT);
+            _songSORT.difficulties.clear();
+            _songSORT.populateDifficulties();
+            _forRemovalVariSORT = [];
+            for (vari in _songSORT.variations) {
+                _variSORT = vari;
+                _ratingsSORT = _songSORT._metadata.get(_variSORT).playData.ratings;
+                _difficultiesSORT = _songSORT._metadata.get(_variSORT).playData.difficulties;
+                _forRemovalDiffSORT = [];
+                for (diff in _difficultiesSORT) {
+                    if (_difficultiesToVariations[0].contains(diff)) {
+                        if (_difficultiesToVariations[1][_difficultiesToVariations[0].indexOf(diff)] != _variSORT) {
+                            var differentVari = _difficultiesToVariations[1][_difficultiesToVariations[0].indexOf(diff)];
                             PolymodErrorHandler.showAlert("Variation-Difficulty Relationship Error", "Tried to add"+
-                                " a difficulty ("+diff+") to a variation ("+variSORT+"), but the difficulty already had"+
-                                " a different variation assigned to it ("+differentVari+") (on song: "+songSORT.id+").");
-                            forRemovalDiffSORT.push(diff);
+                                " a difficulty ("+diff+") to a variation ("+_variSORT+"), but the difficulty already had"+
+                                " a different variation assigned to it ("+differentVari+") (on song: "+_songSORT.id+").");
+                            _forRemovalDiffSORT.push(diff);
                             continue;
                         }
                     } else {
-                        difficultiesToVariations[0].push(diff);
-                        difficultiesToVariations[1].push(variSORT);
+                        _difficultiesToVariations[0].push(diff);
+                        _difficultiesToVariations[1].push(_variSORT);
                     }
-                    if (!Constants.DEFAULT_DIFFICULTY_LIST.contains(diff) && ratingsSORT.exists(diff)) {
+                    if (!Constants.DEFAULT_DIFFICULTY_LIST.contains(diff) && _ratingsSORT.exists(diff)) {
                         Constants.DEFAULT_DIFFICULTY_LIST.push(diff);
-                        difficultySorting[0].push(diff);
-                        difficultySorting[1].push(ratingsSORT.get(diff));
+                        _difficultySorting[0].push(diff);
+                        _difficultySorting[1].push(_ratingsSORT.get(diff));
                         ArraySort.sort(Constants.DEFAULT_DIFFICULTY_LIST, sortDifficulties);
                     }
                 }
-                for (diff in forRemovalDiffSORT) {
-                    difficultiesSORT.remove(diff);
-                    var variationSuffix:String = (variSORT != Constants.DEFAULT_VARIATION) ? '-'+variSORT : '';
-                    songSORT.difficulties.remove(diff+variationSuffix);
+                for (diff in _forRemovalDiffSORT) {
+                    _difficultiesSORT.remove(diff);
+                    var variationSuffix:String = (_variSORT != Constants.DEFAULT_VARIATION) ? '-'+_variSORT : '';
+                    _songSORT.difficulties.remove(diff+variationSuffix);
                 }
-                if (difficultiesSORT.length == 0) {
-                    forRemovalVariSORT.push(variSORT);
+                if (_difficultiesSORT.length == 0) {
+                    _forRemovalVariSORT.push(_variSORT);
                 }
             }
-            for (vari in forRemovalVariSORT) {
-                songSORT.variations.remove(vari);
-                songSORT._metadata.remove(vari);
+            for (vari in _forRemovalVariSORT) {
+                _songSORT.variations.remove(vari);
+                _songSORT._metadata.remove(vari);
             }
         }
 
-        finishedSetup = true;
+        _finishedSetup = true;
     }
 
 
