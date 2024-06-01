@@ -3,12 +3,15 @@ import funkin.data.DataError;
 import funkin.data.song.SongRegistry;
 import funkin.modding.module.Module;
 import funkin.modding.PolymodErrorHandler;
+import funkin.Paths;
 import funkin.play.song.Song;
 import funkin.ui.freeplay.FreeplayState;
 import funkin.util.assets.DataAssets;
 import funkin.util.Constants;
 import funkin.util.tools.ArrayTools;
 import haxe.ds.ArraySort;
+import openfl.utils.Assets;
+import StringTools;
 
 class VariInjectionData {
     public var songIds:Array<String>;
@@ -123,7 +126,7 @@ class VariationInjector extends Module {
         // parse it and inject the variation to
         // each song that needs it.
         for (variId in variIdList) {
-            var path:String = _VART_INJECT_PATH_PREFIX+variId+'.json';
+            var path:String = Paths.json(_VART_INJECT_PATH_PREFIX+variId);
             parser.fromJson(StringTools.trim(Assets.getText(path)), path);
             for (error in parser.errors)
             {
