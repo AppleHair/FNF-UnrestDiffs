@@ -7,14 +7,14 @@
 //-------------------------------------//
 
 
+// UNRISTRICTED DIFFICULTIES' IMPORTS
 // DON'T REMOVE THESE IMPORTS!!!
 import flixel.FlxG;
 import funkin.data.song.SongMetadata;
 import funkin.play.song.Song;
 import funkin.play.song.SongDifficulty;
 import funkin.util.Constants;
-import funkin.util.tools.ArrayTools;
-// Add your imports here:
+// SONG SPECIFIC IMPORTS:
 
 
 
@@ -23,27 +23,19 @@ import funkin.util.tools.ArrayTools;
 
 // fill your class name
 class SongName extends Song {
-    // Declare your variables here:
-
-
 
     function new() {
         // fill your song id
         super("songId");
-        // Put what ever you want here:
-
-
-
-
-
-
     }
-    // Declare your functions here:
+    // SONG SPECIFIC FUNCTIONS/ATTRIBUTES:
 
 
 
 
 
+
+    // UNRISTRICTED DIFFICULTIES' FUNCTIONS:
 
     //--------------------------------------//
     //     DOT TOUCH `injectVariation`!!!   //

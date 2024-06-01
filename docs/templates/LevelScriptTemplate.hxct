@@ -7,6 +7,7 @@
 //--------------------------------------//
 
 
+// UNRISTRICTED DIFFICULTIES' IMPORTS
 // DON'T REMOVE THESE IMPORTS!!!
 import flixel.FlxG;
 import funkin.data.song.SongRegistry;
@@ -16,7 +17,7 @@ import funkin.ui.story.StoryMenuState;
 import funkin.util.Constants;
 import funkin.util.SortUtil;
 import funkin.util.tools.ArrayTools;
-// Add your imports here:
+// LEVEL SPECIFIC IMPORTS:
 
 
 
@@ -25,27 +26,19 @@ import funkin.util.tools.ArrayTools;
 
 // fill your class name
 class LevelName extends Level {
-    // Declare your variables here:
-
-
 
     function new() {
         // fill your level id
         super("levelId");
-        // Put what ever you want here:
-
-
-
-
-
-
     }
-    // Declare your functions here:
+    // LEVEL SPECIFIC FUNCTIONS/ATTRIBUTES:
 
 
 
 
 
+
+    // UNRISTRICTED DIFFICULTIES' FUNCTIONS/ATTRIBUTES:
 
     // PLEASE DON'T MODIFY THIS VARIABLE!!!
     /**
@@ -146,8 +139,8 @@ class LevelName extends Level {
         // especially important if you don't want your song 
         // to appear in the default variation, because the 
         // game normally forces you to have a default variation,
-        // but you can still remove it using a song script 
-        // after the song gets constructed (new()).
+        // but you can still remove it's difficulties from your
+        // song script's constructor.
     }
 
     //-----------------------------------------//
@@ -277,11 +270,16 @@ class LevelName extends Level {
      * @return The display names of the songs in this level
      */
     public override function getSongDisplayNames(difficulty:String):Array<String> {
-        // use the function normally, but filter
-        // empty strings from the returned array.
-        return super.getSongDisplayNames(difficulty).filter(
-            function(songName:String) {return songName.length > 0;}
-        );
+        // use the function normally, but force it
+        // to use the new getSongDisplayName we made,
+        // instead of the static one we can't override,
+        // and filter empty strings from the returned array.
+        var songList:Array<String> = getSongs();
+        if (songList == null) {songList = [];}
+        var songNameList:Array<String> = songList.map(function(songId:String) {
+            return this.getSongDisplayName(songId, difficulty);
+        }).filter(function(songName:String) {return songName.length > 0;});
+        return songNameList;
     }
 
     //-----------------------------------------//

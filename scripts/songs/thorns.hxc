@@ -1,27 +1,20 @@
-// Import what ever you want here:
-
-
-import funkin.audio.FunkinSound;
-import funkin.graphics.FunkinSprite;
-import flixel.FlxSprite;
-import funkin.play.PlayState;
-import funkin.play.PlayStatePlaylist;
-import funkin.Paths;
-import flixel.util.FlxTimer;
-
-
+// UNRISTRICTED DIFFICULTIES' IMPORTS
 // DON'T REMOVE THESE IMPORTS!!!
 import flixel.FlxG;
-
-import funkin.play.song.Song;
 import funkin.data.song.SongMetadata;
+import funkin.play.song.Song;
 import funkin.play.song.SongDifficulty;
-import funkin.util.tools.ArrayTools;
 import funkin.util.Constants;
+// SONG SPECIFIC IMPORTS:
+import flixel.FlxSprite;
+import flixel.util.FlxTimer;
+import funkin.audio.FunkinSound;
+import funkin.graphics.FunkinSprite;
+import funkin.Paths;
+import funkin.play.PlayState;
+import funkin.play.PlayStatePlaylist;
 
-// fill your class name
 class ThornsSong extends Song {
-
     // Set these on onCountDownStart through
     // a module to override default behavior
     public var hasPlayedCutscene:Bool = false;
@@ -31,164 +24,155 @@ class ThornsSong extends Song {
     public var redFadeColor:Int = 0xFFFF1B31;
     public var conversationId:String = 'thorns';
 
-    public function new(songId:String) {
-        // trace("[SONG] - Called init");
-        // trace(songId);
-
-        // fill your song id
+    function new() {
         super("thorns");
-        // do what ever you want here:
-        // (IGNORE `songId` PARAMETER!!)
-
-
-
-
-        //   VARIATION INJECTION DOT TOUCH!!!   //
-        if (songId != "unknown") {
-            // trace("[SONG] - Receved variations");
-            var varis = songId.substr(1,songId.length-2).split(',');
-            // trace(varis);
-            var res = this.injectVariants(varis);
-            if (!res) {return null;}
-        }
     }
-
-    // do what ever you want here:
-
-
-
+    // SONG SPECIFIC FUNCTIONS/ATTRIBUTES:
 
     public override function onCountdownStart(event:CountdownScriptEvent):Void {
-      super.onCountdownStart(event);
+        super.onCountdownStart(event);
 
-      if (!PlayStatePlaylist.isStoryMode) hasPlayedCutscene = true;
+        if (!PlayStatePlaylist.isStoryMode) hasPlayedCutscene = true;
 
-      if (!hasPlayedCutscene) {
-        trace('Pausing countdown to play cutscene.');
+        if (!hasPlayedCutscene) {
+            trace('Pausing countdown to play cutscene.');
 
-        hasPlayedCutscene = true;
+            hasPlayedCutscene = true;
 
-        startCutscene();
-        event.cancel(); // CANCEL THE COUNTDOWN!
-      }
+            startCutscene();
+            event.cancel(); // CANCEL THE COUNTDOWN!
+        }
     }
 
     function startCutscene() {
-      if (onlyDialogue) {
-        startDialogue();
-        return;
-      }
-
-      trace('Hit start of song! Starting cutscene.');
-
-      PlayState.instance.camHUD.visible = false;
-      PlayState.instance.camCutscene.visible = true;
-
-      var red = new FunkinSprite(-20, -20).makeSolidColor(FlxG.width * 1.5, FlxG.height * 1.5, redFadeColor);
-      red.cameras = [PlayState.instance.camCutscene];
-      red.alpha = 1.0;
-      PlayState.instance.add(red);
-
-      var senpaiCrazy = FunkinSprite.createSparrow(0, 0, senpaiCrazyImagePath);
-      senpaiCrazy.cameras = [PlayState.instance.camCutscene];
-      senpaiCrazy.animation.addByPrefix('idle', 'Senpai Pre Explosion instance 1', 24, false);
-      senpaiCrazy.setGraphicSize(Std.int(senpaiCrazy.width * Constants.PIXEL_ART_SCALE));
-      senpaiCrazy.antialiasing = false;
-
-      senpaiCrazy.scrollFactor.set();
-      senpaiCrazy.updateHitbox();
-      senpaiCrazy.screenCenter();
-      senpaiCrazy.x += senpaiCrazy.width / 5;
-
-      senpaiCrazy.alpha = 0;
-
-      PlayState.instance.add(senpaiCrazy);
-
-      // Senpai fades in stepwise rather than linear.
-      new FlxTimer().start(0.3, function(timer:FlxTimer) {
-        senpaiCrazy.alpha += 0.15;
-
-        if (senpaiCrazy.alpha < 1) {
-          timer.reset();
-        } else {
-          senpaiCrazy.alpha = 1;
-
-          // Play the actual animation.
-          senpaiCrazy.animation.play('idle');
-
-          // Play the SFX alongside it.
-          trace('Playing senpai death SFX.');
-          FunkinSound.playOnce(Paths.sound(senpaiDeathSoundPath), 1.0, function () {
-            trace('Senpai death SFX done.');
-            // Called when the sound completes. Clean up the cutscene here.
-            // Hard cut to the cutscene.
-            PlayState.instance.remove(senpaiCrazy);
-            PlayState.instance.remove(red);
-            PlayState.instance.camCutscene.fade(0xFFEEEEEE, 0.8, true);
+        if (onlyDialogue) {
             startDialogue();
-          });
-
-          // Fade to white 3.2 seconds into the cutscene.
-          new FlxTimer().start(3.2, function(deadTime:FlxTimer)
-          {
-            PlayState.instance.camCutscene.fade(0xFFEEEEEE, 1.6, false);
-          });
+            return;
         }
-      });
+
+        trace('Hit start of song! Starting cutscene.');
+
+        PlayState.instance.camHUD.visible = false;
+        PlayState.instance.camCutscene.visible = true;
+
+        var red = new FunkinSprite(-20, -20).makeSolidColor(FlxG.width * 1.5, FlxG.height * 1.5, redFadeColor);
+        red.cameras = [PlayState.instance.camCutscene];
+        red.alpha = 1.0;
+        PlayState.instance.add(red);
+
+        var senpaiCrazy = FunkinSprite.createSparrow(0, 0, senpaiCrazyImagePath);
+        senpaiCrazy.cameras = [PlayState.instance.camCutscene];
+        senpaiCrazy.animation.addByPrefix('idle', 'Senpai Pre Explosion instance 1', 24, false);
+        senpaiCrazy.setGraphicSize(Std.int(senpaiCrazy.width * Constants.PIXEL_ART_SCALE));
+        senpaiCrazy.antialiasing = false;
+
+        senpaiCrazy.scrollFactor.set();
+        senpaiCrazy.updateHitbox();
+        senpaiCrazy.screenCenter();
+        senpaiCrazy.x += senpaiCrazy.width / 5;
+
+        senpaiCrazy.alpha = 0;
+
+        PlayState.instance.add(senpaiCrazy);
+
+        // Senpai fades in stepwise rather than linear.
+        new FlxTimer().start(0.3, function(timer:FlxTimer) {
+            senpaiCrazy.alpha += 0.15;
+
+            if (senpaiCrazy.alpha < 1) {
+                timer.reset();
+            } else {
+                senpaiCrazy.alpha = 1;
+
+                // Play the actual animation.
+                senpaiCrazy.animation.play('idle');
+
+                // Play the SFX alongside it.
+                trace('Playing senpai death SFX.');
+                FunkinSound.playOnce(Paths.sound(senpaiDeathSoundPath), 1.0, function () {
+                    trace('Senpai death SFX done.');
+                    // Called when the sound completes. Clean up the cutscene here.
+                    // Hard cut to the cutscene.
+                    PlayState.instance.remove(senpaiCrazy);
+                    PlayState.instance.remove(red);
+                    PlayState.instance.camCutscene.fade(0xFFEEEEEE, 0.8, true);
+                    startDialogue();
+                });
+
+                // Fade to white 3.2 seconds into the cutscene.
+                new FlxTimer().start(3.2, function(deadTime:FlxTimer) {
+                    PlayState.instance.camCutscene.fade(0xFFEEEEEE, 1.6, false);
+                });
+            }
+        });
     }
 
     function startDialogue() {
-      PlayState.instance.startConversation(conversationId);
+        PlayState.instance.startConversation(conversationId);
     }
 
     /**
      * Don't replay the cutscene between restarts.
      */
-    function onSongRetry(event:ScriptEvent)
-    {
-      super.onSongRetry(event);
+    function onSongRetry(event:ScriptEvent) {
+        super.onSongRetry(event);
 
-      hasPlayedCutscene = true;
+        hasPlayedCutscene = true;
     }
 
     /**
      * Replay the cutscene after leaving the song.
      */
-    function onCreate(event:ScriptEvent):Void
-    {
-      super.onCreate(event);
+    function onCreate(event:ScriptEvent):Void {
+        super.onCreate(event);
 
-      hasPlayedCutscene = false;
-      onlyDialogue = false;
-      redFadeColor = 0xFFFF1B31;
-      senpaiCrazyImagePath = 'weeb/senpaiCrazy';
-      senpaiDeathSoundPath = 'Senpai_Dies';
-      conversationId = 'thorns';
+        hasPlayedCutscene = false;
+        onlyDialogue = false;
+        redFadeColor = 0xFFFF1B31;
+        senpaiCrazyImagePath = 'weeb/senpaiCrazy';
+        senpaiDeathSoundPath = 'Senpai_Dies';
+        conversationId = 'thorns';
     }
 
     public override function onDialogueEnd() {
-      // We may need to wait for the outro to play.
-      Countdown.performCountdown();
+        // We may need to wait for the outro to play.
+        Countdown.performCountdown();
     }
 
+    // UNRISTRICTED DIFFICULTIES' FUNCTIONS:
 
-
-    //-------------------------------------//
-    //    DOT TOUCH `injectVariants`!!!    //
-    //-------------------------------------//
-
-    public function injectVariants(varis:Array<String>):Bool {
-        for (vari in varis) {
-            var variMeta:Null<SongMetadata> = this.fetchVariationMetadata(this.id, vari);
-            if (variMeta == null) {
-                FlxG.log.warn('[SONG] Failed to load variation metadata ('+this.id+':'+vari+'), is the path correct?');
-                trace('[SONG]  FAILED to load variation: '+vari);
-                return false;
-            }
-            this._metadata.set(variMeta.variation, variMeta);
-            trace('[SONG]  Loaded variation: '+vari);
+    //--------------------------------------//
+    //     DOT TOUCH `injectVariation`!!!   //
+    //--------------------------------------//
+    /**
+     * Tries to injects a new variation into the song.
+     * Returns true if the variation was successfully injected,
+     * and false if the variation failed to inject. Used by the
+     * variation injector when injecting new variations into the
+     * different songs according to the provided injection data
+     * files, while making sure the sorting is done correctly
+     * and the relationship between variations and difficulties
+     * is One-to-many.
+     * @param vari the variation id to inject.
+     * @return Bool
+     */
+    public function injectVariation(vari:String):Bool {
+        // fetch the requested variation's
+        // metadata for the song
+        var variMeta:Null<SongMetadata> = this.fetchVariationMetadata(this.id, vari);
+        // if it doesn't exist, the
+        // variation injection failed
+        if (variMeta == null) {
+            FlxG.log.warn('[SONG] Failed to load variation metadata ('+this.id+':'+vari+'), is the path correct?');
+            trace('[SONG]  FAILED to load variation: '+vari);
+            // false for failure
+            return false;
         }
-        this.populateDifficulties();
+        // add the new variation
+        // metadata to the _metadata map
+        this._metadata.set(variMeta.variation, variMeta);
+        trace('[SONG]  Loaded variation: '+vari);
+        // true for success
         return true;
     }
 
@@ -197,11 +181,22 @@ class ThornsSong extends Song {
     //    IGNORE `variationIds` PARAMETER    //
     //            AT ALL COSTS!!!            //
     //---------------------------------------//
-
+    /**
+     * List all the difficulties in this song.
+     *
+     * @param variationId Optionally filter by a single variation.
+     * @param showLocked Include charts which are not unlocked
+     * @param showHidden Include charts which are not accessible to the player.
+     *
+     * @return The list of difficulties.
+     */
     public override function listDifficulties(?variationId:String,
         ?variationIds:Array<String>, showLocked:Bool = false,
         showHidden:Bool = false):Array<String>
     {
+        // uses the function normally, but while ignoring the 
+        // variationIds parameter, to prevent freeplay from
+        // filtering out variations.
         return super.listDifficulties(variationId,this.variations,showLocked,showHidden);
     }
 
@@ -210,20 +205,45 @@ class ThornsSong extends Song {
     //     IGNORE `variations` PARAMETER     //
     //            AT ALL COSTS!!!            //
     //---------------------------------------//
-
-    public override function getDifficulty(?diffId:String, ?variation:String,
-        ?variations:Array<String>):Null<SongDifficulty>
+    /**
+     * Retrieve the metadata for a specific difficulty, including the chart if it is loaded.
+     * @param diffId The difficulty ID, such as `easy` or `hard`.
+     * @param variation The variation ID to fetch the difficulty for.
+     * @return The difficulty data.
+     */
+    public override function getDifficulty(?diffId:String,
+        ?variation:String, ?variations:Array<String>):Null<SongDifficulty>
     {
-        if (diffId == null) {diffId = listDifficulties(variation)[0];}
-        tryVariationId = this.getFirstValidVariation(diffId);
-        if (tryVariationId == null) {return  null;}
-        if (variation == null) {variation = tryVariationId;}
+        // if diffId is null, try to get the
+        // first difficulty available in the song,
+        // with priority to the provided variation
+        // if it was provided.
+        if (diffId == null && variation != null) {diffId = listDifficulties(variation)[0];}
+        if (diffId == null) {diffId = listDifficulties()[0];}
+        // if diffId is still null after this point, there
+        // are no difficulties in this song at all.
+        if (diffId == null) {return null;}
 
+        // Try to get the first valid variation to the
+        // difficulty and replace it with the provided
+        // variation if no variation was actually provided.
+        tryVariationId = this.getFirstValidVariation(diffId);
+        if (variation == null) {variation = tryVariationId;}
+        // If there's no first valid variation to the
+        // difficulty, the difficulty doesn't exist in the song.
+        if (tryVariationId == null) {return  null;}
+
+        // create the suffix for this difficulty in the difficulties map
         var variationSuffix = (variation != Constants.DEFAULT_VARIATION) ? '-'+variation : '';
 
+        // if the difficulty exists in
+        // the difficulties map, return it
         if (difficulties.exists(diffId+variationSuffix)) {
             return difficulties.get(diffId+variationSuffix);
         }
+        // otherwise, attempt to find the difficulty with
+        // the first valid variation, and only if that doesn't
+        // work, return null.
         return (variation == tryVariationId ? null : this.getDifficulty(diffId));
     }
 
@@ -232,10 +252,12 @@ class ThornsSong extends Song {
     //   IGNORE `possibleVariations` PARAMETER   //
     //              AT ALL COSTS!!!              //
     //-------------------------------------------//
-
     public override function getFirstValidVariation(?diffId:String,
         ?possibleVariations:Array<String>):Null<String>
     {
+	    // uses the function normally, but while
+        // ignoring the possibleVariations parameter,
+        // to prevent freeplay from filtering out variations
         return super.getFirstValidVariation(diffId);
     }
 
@@ -243,22 +265,47 @@ class ThornsSong extends Song {
     //      IF YOU EDIT `hasDifficulty`      //
     //    IGNORE `variationIds` PARAMETER    //
     //            AT ALL COSTS!!!            //
-
-    // (NOTE: This function is unused in the //
-    //  game's code on 0.3.2, but it might   //
-    //  get reused in the future)            //
     //---------------------------------------//
-
     public override function hasDifficulty(diffId:String,
         ?variationId:String, ?variationIds:Array<String>):Bool
     {
+        // if diffId is null, try to get the
+        // first difficulty available in the song,
+        // with priority to the provided variation
+        // if it was provided.
+        if (diffId == null && variationId != null) {diffId = listDifficulties(variationId)[0];}
+        if (diffId == null) {diffId = listDifficulties()[0];}
+        // if diffId is still null after this point,
+        // there are no difficulties in this song at all.
+        if (diffId == null) {return false;}
+
+        // Try to get the first valid variation to the
+        // difficulty and replace it with the provided
+        // variation if no variation was actually provided.
         tryVariationId = this.getFirstValidVariation(diffId);
-        if (tryVariationId == null) {return false;}
         if (variationId == null) {variationId = tryVariationId;}
+        // If there's no first valid variation to the
+        // difficulty, the difficulty doesn't exist in the song.
+        if (tryVariationId == null) {return false;}
 
-        variationIds = null;
-
+        // create the suffix for this difficulty in the difficulties map
         var variationSuffix = (variationId != Constants.DEFAULT_VARIATION) ? '-'+variationId : '';
-        return this.difficulties.exists(diffId+variationSuffix);
+
+        // if the difficulty exists in
+        // the difficulties map, return true
+        if (this.difficulties.exists(diffId+variationSuffix)) {
+            return true;
+        }
+        // otherwise, attempt to find the difficulty with
+        // the first valid variation, and only if that doesn't
+        // work, return false.
+        return (variationId == tryVariationId ? false : this.hasDifficulty(diffId));
+
+        // like getDifficulty, but returns a boolean for if the
+        // difficulty exists in the song or not. This function
+        // is currently (FNF 0.3.3) unused and deprecated by UD
+        // in favor of getDifficulty (checks for null), but it's
+        // still being maintained here in case it gets reused in
+        // a future update to FNF.
     }
 }

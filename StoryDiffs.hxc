@@ -9,6 +9,7 @@ import funkin.modding.module.ModuleHandler;
 import funkin.Paths;
 import funkin.ui.story.Level;
 import funkin.ui.story.StoryMenuState;
+import funkin.util.assets.DataAssets;
 import funkin.util.Constants;
 import funkin.util.tools.ArrayTools;
 import openfl.utils.Assets;
@@ -102,16 +103,20 @@ class StoryDiffs extends Module {
 
 
     function setup():Void {
-        if (_finishedSetup) {return;}
+        if (this._finishedSetup) {return;}
 
         var levelIdList:Array<String> = [];
 
-        this._difficultiesToVariations = ModuleHandler.getModule("vari-injector").scriptGet("difficultiesToVariations");
+        // This is only used for reading
+        // stuff and doesn't get modyfied.
+        this._difficultiesToVariations = ModuleHandler.
+            getModule("vari-injector").scriptGet("_difficultiesToVariations");
         
         // Making alt level data for the
         // default variation is not recommended.
         // Please use the default level data instead.
-        var allVariations:Array<String> = ArrayTools.unique(_difficultiesToVariations[1]).remove("default");
+        var allVariations:Array<String> = ArrayTools.unique(this._difficultiesToVariations[1]);
+        allVariations.remove("default");
 
         for (variationId in allVariations) {
 
@@ -126,7 +131,7 @@ class StoryDiffs extends Module {
             }
         }
 
-        var allDifficulties:Array<String> = ArrayTools.unique(_difficultiesToVariations[0]);
+        var allDifficulties:Array<String> = ArrayTools.unique(this._difficultiesToVariations[0]);
 
         for (difficultyId in allDifficulties) {
 
@@ -145,18 +150,20 @@ class StoryDiffs extends Module {
             LevelRegistry.instance.fetchEntry(levelId).scriptCall("resetDataToDefault", []);
         }
 
+        trace('[story-diffs]  -  Setup completed successfully');
+
         this._finishedSetup = true;
     }
 
     public override function onCreate(event:ScriptEvent):Void {
-        // trace('called onCreate');
-        setup();
         super.onCreate();
+        setup();
     }
 
 
     public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
         // trace('called onStateChangeEnd');
+        super.onStateChangeEnd();
         if (Std.isOfType(event.targetState, StoryMenuState)) {
             this._storyMenu = event.targetState;
             this._justEnteredStoryMenu = true;
@@ -170,9 +177,7 @@ class StoryDiffs extends Module {
             // trace(this._lastRememberedDifficulty);
             // trace(this._lastDifficultyList);
         }
-
         setup();
-        super.onStateChangeEnd();
     }
 
     public override function onUpdate(event:UpdateScriptEvent):Void {

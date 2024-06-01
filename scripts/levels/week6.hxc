@@ -1,178 +1,294 @@
+// UNRISTRICTED DIFFICULTIES' IMPORTS
 // DON'T REMOVE THESE IMPORTS!!!
 import flixel.FlxG;
-import funkin.ui.story.StoryMenuState;
-import funkin.util.SortUtil;
-import funkin.util.tools.ArrayTools;
-import funkin.util.Constants;
 import funkin.data.song.SongRegistry;
 import funkin.play.song.Song;
 import funkin.ui.story.Level;
-// Add your imports here:
+import funkin.ui.story.StoryMenuState;
+import funkin.util.Constants;
+import funkin.util.SortUtil;
+import funkin.util.tools.ArrayTools;
+// LEVEL SPECIFIC IMPORTS:
 
-
-
-
-
-
-
-
-//----------------------------------------//
-//    USE THIS ONLY FOR NEW LEVELS AND    //
-//  NOT FOR OVERRIDEING EXISTING LEVELS!  //
-//----------------------------------------//
 
 class Week6Level extends Level {
-  // DON'T TOUCH THIS VARIABLE!!!
-  var _defaultData:Dynamic = null;
-  // Declare your variables here:
+
+    function new() {
+        super("week6");
+    }
+    // LEVEL SPECIFIC FUNCTIONS/ATTRIBUTES:
 
 
+    // UNRISTRICTED DIFFICULTIES' FUNCTIONS/ATTRIBUTES:
 
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    /**
+     * Used to store the default data of the level,
+     * so we can reset the data to the default data
+     * after loading alt level data.
+     */
+    var _defaultData:Dynamic = null;
 
+    //-----------------------------------------//
+    //   LEVEL DATA RELOADING DON'T TOUCH!!!   //
+    //-----------------------------------------//
+    /**
+     * Reloads the data of the level with new data,
+     * while keeping the default data, so we could
+     * reuse it later.
+     * @param newData The level data to load.
+     */
+    public function reloadData(newData:Dynamic):Void {
+        // don't load the same data twice
+        if (newData == this._data) {return;}
+        this._data = newData;
+        // I won't let you hide the level from
+        // story mode if it's not already hidden.
+        this._data.visible = this._defaultData.visible;
+        // Adding songs to alt levels
+        // gets handles somewhere else.
+        this._data.songs = this._defaultData.songs;
+    }
 
+    //-----------------------------------------//
+    //   LEVEL DATA RELOADING DON'T TOUCH!!!   //
+    //-----------------------------------------//
+    /**
+     * Resets the data of the level to the default data.
+     * Used by the story-diffs module to reset the data
+     * when an alt level data can't be found for the
+     * current variation or difficulty.
+     */
+    public function resetDataToDefault():Void {
+        // resets the data to the default data
+        this._data = this._defaultData;
+    }
 
-	function new()
-	{
-		super("week6");
-        // In the beginning, the data is the same as the default data.
-        this._defaultData = this._data;
-        // Put here what ever you want:
+    //-----------------------------------------//
+    //   LEVEL DATA RELOADING DON'T TOUCH!!!   //
+    //-----------------------------------------//
+    /**
+     * Consider adding songs to the level's song list.
+     * @param songs The list of song IDs to consider adding.
+     */
+    public function considerAddingSongs(songs:Array<String>):Void {
+        if (songs == null) {return;}
+        // the song list needs to have all the songs the level
+        // already has, and if the level already has all the songs
+        // in the song list, we don't need to add them again.
+        if (ArrayTools.isSuperset(this._defaultData.songs,songs) ||
+            !ArrayTools.isSuperset(songs, this._data.songs)) {return;}
 
-
-
-
-
-
-	}
-    // Declare your functions here:
-
-
-
-
-
-
-
-
-
-
-
-  //-----------------------------------------//
-  //   LEVEL DATA RELOADING DON'T TOUCH!!!   //
-  //-----------------------------------------//
-  public function reloadData(newData:Dynamic):Void {
-    // don't load the same data twice
-    if (newData == this._data) {return;}
-    this._data = newData;
-    // I won't let you hide the level from
-    // story mode if it's not already hidden.
-    this._data.visible = this._defaultData.visible;
-    // I won't let you change the songs here.
-    // changing songs in a week will be a feature
-    // for the future, and won't be done here.
-    this._data.songs = this._defaultData.songs;
-  }
-
-  //-----------------------------------------//
-  //   LEVEL DATA RELOADING DON'T TOUCH!!!   //
-  //-----------------------------------------//
-  public function resetDataToDefault():Void {
-    // resets the data to the default data
-    this._data = this._defaultData;
-  }
-
-
-  //-----------------------------------------//
-  //       DON'T EDIT THIS FUNCTION IF       //
-  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
-  //-----------------------------------------//
-  public override function getSongs():Array<String> {
-    var songs = super.getSongs();
-    var forRemoval:Array<String> = [];
-    for (song in songs) {
-      if (Std.isOfType(FlxG.state, StoryMenuState)) {
-        if (!SongRegistry.instance.fetchEntry(song).hasDifficulty(FlxG.state.currentDifficultyId)) {
-          forRemoval.push(song);
+        // we'll use this array as a queue, where song's
+        // from the songs array will be added to the queue
+        // while we iterate through it.
+        var accumulatedSongsQueue:Array<String> = [];
+        for (songId in songs) {
+            // if the song isn't already in the
+            // level's song list, add it to the queue.
+            if (this._defaultData.songs.indexOf(songId) == -1) {
+                accumulatedSongsQueue.push(songId);
+                continue;
+            }
+            // otherwise, insert the songs accumulated in the queue
+            // behind the current song in the default songs list.
+            while (accumulatedSongsQueue.length > 0) {
+                this._defaultData.songs.insert(
+                    this._defaultData.songs.indexOf(songId),
+                    accumulatedSongsQueue.shift()
+                );
+            }
         }
-      }
+        // push all the remaining songs from the
+        // queue to the end of the default songs list.
+        while (accumulatedSongsQueue.length > 0) {
+            this._defaultData.songs.push(accumulatedSongsQueue.shift());
+        }
+
+        // using this method, we can add songs to the
+        // level's song list while keeping the intended
+        // order of the songs in the list, and without
+        // having to worry about adding songs that are
+        // already in the list.
+
+        // Note that it's your responsibility to make sure
+        // the songs appear only in the variations/difficulties
+        // you want them to appear in, because added songs
+        // will appear for all the difficulties they have,
+        // regardless of the variation or difficulty associated 
+        // with the alt level data which added them. This is
+        // especially important if you don't want your song 
+        // to appear in the default variation, because the 
+        // game normally forces you to have a default variation,
+        // but you can still remove it's difficulties from your
+        // song script's constructor.
     }
-    for (song in forRemoval) {
-      songs.remove(song);
+
+    //-----------------------------------------//
+    //       DON'T EDIT THIS FUNCTION IF       //
+    //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+    //-----------------------------------------//
+    /**
+     * Get the list of songs in this level, as an array of IDs.
+     * @return Array<String>
+     */
+    public override function getSongs():Array<String> {
+        // gets the songs normally
+        var songs = super.getSongs();
+        if (songs == null) {return null;}
+        // filter out songs that don't have
+        // the current difficulty
+        return songs.filter(
+            function(songId:String) {
+                // if we're in the story menu state
+                if (Std.isOfType(FlxG.state, StoryMenuState)) {
+                    // if the song doesn't have the  
+                    // current difficulty, filter it out.
+                    return SongRegistry.instance.fetchEntry(songId).
+                        getDifficulty(FlxG.state.currentDifficultyId) != null;
+                }
+                // otherwise, keep the song.
+                return true;
+            }
+        );
+
+        // using this method, we can display
+        // the maximum amount of songs possible
+        // in the story menu state, while also making
+        // PlayState not load songs that don't have
+        // the current difficulty, which would have
+        // caused an error which could have taken us
+        // back to the main menu.
     }
-    return songs;
-  }
 
-  // I'm using this array to track the difficulties I
-  // return in getDifficulties. I'm declaring them here
-  // because I need to access them from a bigger scope,
-  // which I apparantly can't get on the Hscript stack,
-  // which is extremely bizarre. it literally just forgets
-  // some of the variables I declared if I don't declare
-  // them as attributes here.
-  var _difficulties:Array<String> = [];
 
-  //-----------------------------------------//
-  //       DON'T EDIT THIS FUNCTION IF       //
-  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
-  //-----------------------------------------//
-  public override function getDifficulties():Array<String> {
-    this._difficulties = [];
-    var song:Null<Song> = null;
-    for (songId in _data.songs) {
-      song = SongRegistry.instance.fetchEntry(songId);
-      if (song == null) {continue;}
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    // I have to declare it here because
+    // Hscript forgets it too quickly if I don't.
+    /**
+     * I'm using this array to track the difficulties I
+     * return in getDifficulties.
+     */
+    var _difficulties:Array<String> = [];
 
-      for (diff in song.listDifficulties(null, song.variations, false, false)) {
-        ArrayTools.pushUnique(this._difficulties, diff);
-      }
+    //-----------------------------------------//
+    //       DON'T EDIT THIS FUNCTION IF       //
+    //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+    //-----------------------------------------//
+    /**
+     * The list of difficulties the player can select from for this level.
+     * @return The difficulty IDs.
+     */
+    public override function getDifficulties():Array<String> {
+        // calibrates the difficulties array
+        this._difficulties = [];
+        // declare the song variable
+        var song:Null<Song> = null;
+        // iterate through the songs
+        // included in the level
+        for (songId in _data.songs) {
+            // fetch the song object from the registry
+            song = SongRegistry.instance.fetchEntry(songId);
+            // if it doesn't exist,
+            // continue to the next song
+            if (song == null) {continue;}
+
+            // iterate through the
+            // difficulties of the song
+            // (non-hidden difficulties)
+            for (diff in song.listDifficulties(null, song.variations, false, false)) {
+                // push the difficulty to the
+                // difficulties array if it's not
+                // already there
+                ArrayTools.pushUnique(this._difficulties, diff);
+            }
+        }
+        // sort the difficulties array
+        this._difficulties.sort(this.sortingStoryDiffs);
+        // return the final 
+        // sorted difficulties array
+        return this._difficulties;
+
+        // Using this method, we can display
+        // the maximum amount of difficulties
+        // available in the level in the story
+        // menu state. getSongs will filter out
+        // the songs that don't have the current
+        // difficulty, so we don't have to worry
+        // about that here.
     }
-    this._difficulties.sort(this.sortingStoryDiffs);
-    return this._difficulties;
-  }
 
-  //-----------------------------------------//
-  //       DON'T EDIT THIS FUNCTION IF       //
-  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
-  //-----------------------------------------//
-  // Hscript doesn't want to use bind, so I made this...
-  function sortingStoryDiffs(a:String, b:String):Int {
-    return SortUtil.defaultsThenAlphabetically(Constants.DEFAULT_DIFFICULTY_LIST, a, b);
-  }
+    //-----------------------------------------//
+    //       DON'T EDIT THIS FUNCTION IF       //
+    //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+    //-----------------------------------------//
+    /**
+     * uses the default difficulty list to sort the difficulties
+     * (this list gets modified by the variation injector in order
+     * to implement the difficulty "rating" system, which sorts the
+     * difficulties according to their "playData.ratings" numbers)
+     * @param a a member of the sorted array
+     * @param b another member of the sorted array
+     * @return Int
+     */
+    function sortingStoryDiffs(a:String, b:String):Int {
+        // Hscript doesn't want to use bind, so I made this...
+        return SortUtil.defaultsThenAlphabetically(Constants.DEFAULT_DIFFICULTY_LIST, a, b);
+    }
 
-  //----------------------------------------//
-  //   IF YOU WANT TO HIDE SONG NAMES FORM  //
-  //     THE STORY MODE MENU, CHECK OUT     //
-  //     `getSongDisplayName`, NOT THIS     //
-  //----------------------------------------//
-  //-----------------------------------------//
-  //       DON'T EDIT THIS FUNCTION IF       //
-  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
-  //-----------------------------------------//
-  public override function getSongDisplayNames(difficulty:String):Array<String> {
-    var songList:Array<String> = getSongs();
-    if (songList == null) {songList = [];}
-    var songNameList:Array<String> = songList.map(function(songId:String) {
-      return this.getSongDisplayName(songId, difficulty);
-    }).filter(function(songName:String) {return songName.length > 0;});
-    return songNameList;
-  }
+    //----------------------------------------//
+    //   IF YOU WANT TO HIDE SONG NAMES FORM  //
+    //     THE STORY MODE MENU, CHECK OUT     //
+    //     `getSongDisplayName`, NOT THIS     //
+    //----------------------------------------//
+    //----------------------------------------//
+    //       DON'T EDIT THIS FUNCTION IF      //
+    //    YOU DON'T KNOW WHAT YOU'RE DOING!   //
+    //----------------------------------------//
+    /**
+     * Get the list of songs in this level, as an array of names, for display on the menu.
+     * @param difficulty The difficulty of the level being displayed
+     * @return The display names of the songs in this level
+     */
+    public override function getSongDisplayNames(difficulty:String):Array<String> {
+        // use the function normally, but force it
+        // to use the new getSongDisplayName we made,
+        // instead of the static one we can't override,
+        // and filter empty strings from the returned array.
+        var songList:Array<String> = getSongs();
+        if (songList == null) {songList = [];}
+        var songNameList:Array<String> = songList.map(function(songId:String) {
+            return this.getSongDisplayName(songId, difficulty);
+        }).filter(function(songName:String) {return songName.length > 0;});
+        return songNameList;
+    }
 
-  //-----------------------------------------//
-  //       DON'T EDIT THIS FUNCTION IF       //
-  //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
-  //   (except for the commented out part)   //
-  //-----------------------------------------//
-  public function getSongDisplayName(songId:String, difficulty:String):String {
-    var song:Null<Song> = SongRegistry.instance.fetchEntry(songId);
-    if (song == null) {return 'Unknown';}
-    // if (song.id == "blazin" && !{{condition}}) {return '';}
-    // THIS IS HOW YOU HIDE A SONG NAME
-    // FROM STORY MODE MENU ^^^^^^^^^^^^
-    // add more of these here:
+    //-----------------------------------------//
+    //       DON'T EDIT THIS FUNCTION IF       //
+    //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
+    //   (except for the commented out part)   //
+    //-----------------------------------------//
+    public function getSongDisplayName(songId:String, difficulty:String):String {
+        // fetch the song from the registry
+        var song:Null<Song> = SongRegistry.instance.fetchEntry(songId);
+        // if it doesn't exist, return 'Unknown'
+        // (Like in the original implementation)
+        if (song == null) {return 'Unknown';}
+        // get the current variation metadata
+        // of this song according to the difficultiy
+        var variMeta = song._metadata.get(song.getFirstValidVariation(difficulty));
+        // if that variation metadata doesn't
+        // exist for the song, hide it.
+        if (variMeta == null) {return '';}
+        // return the song's display name
+        // according to the current variation metadata
+        return variMeta.songName;
 
-
-
-    var variMeta = song._metadata.get(song.getFirstValidVariation(difficulty));
-    if (variMeta == null) {return '';}
-    return variMeta.songName;
-  }
+        // using this method, we can make the
+        // display name of the songs in the story
+        // mode menu change according to the variation
+        // associated with the current difficulty, while
+        // still giving level scripts control over which
+        // song names are displayed.
+    }
 }

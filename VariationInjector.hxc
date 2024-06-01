@@ -1,13 +1,21 @@
 // TODO: Add more comments to this file
+import funkin.data.DataError;
 import funkin.data.song.SongRegistry;
 import funkin.modding.module.Module;
 import funkin.modding.PolymodErrorHandler;
 import funkin.play.song.Song;
 import funkin.ui.freeplay.FreeplayState;
+import funkin.util.assets.DataAssets;
 import funkin.util.Constants;
-import funkin.util.DataAssets;
 import funkin.util.tools.ArrayTools;
 import haxe.ds.ArraySort;
+
+class VariInjectionData {
+    public var songIds:Array<String>;
+    public function new() {
+        songIds = [];
+    }
+}
 
 /**
  * In order for this to work, the base
@@ -36,11 +44,6 @@ class VariationInjector extends Module {
         ["easy","normal","hard","erect","nightmare"],
         ["default","default","default","erect","erect"]
     ];
-    
-    public var difficultiesToVariations(get, never):Array<Array<String>>;
-    function get_difficultiesToVariations():Array<Array<String>> {
-        return ArrayTools.deepClone(_difficultiesToVariations);
-    }
     
     // PLEASE DON'T MODIFY THIS VARIABLE!!!
     var _difficultySorting:Array<Array<String>> = [
@@ -98,20 +101,23 @@ class VariationInjector extends Module {
     }
 
     function setup():Void {
-        if (_finishedSetup) {return;}
+        if (this._finishedSetup) {return;}
 
-        // gets all the variation injection files
+        // gets all the variation injection files.
         var variIdList:Array<String> = DataAssets.listDataFilesInPath(_VART_INJECT_PATH_PREFIX, '.json').map(
             function(variInjectPath:String):String {
                 return variInjectPath.split('/')[0];
             }
         );
+        // if a file is named "default.json", it will be ignored,
+        // because you can't inject the default variation to a song,
+        // it'll always be there.
+        variIdList.remove("default");
 
         // Create a new parser for the variation injection data,
         // which is a list of all songs that need to have a certaion
         // variation injected.
-        var parser = new json2object.JsonParser<Array<String>>();
-        parser.ignoreUnknownVariables = true;
+        var parser:json2object.JsonParser<VariInjectionData> = new json2object.JsonParser();
         
         // For each variation injection file,
         // parse it and inject the variation to
@@ -128,12 +134,11 @@ class VariationInjector extends Module {
                 trace('[vari-injector]  FAILED to parse variation injection data: '+variId);
                 continue;
             }
-            for (songId in ArrayTools.unique(parser.value)) {
+            for (songId in ArrayTools.unique(parser.value.songIds)) {
                 this.injectVariationToSong(variId, songId);
             }
         }
         trace("[vari-injector]  -  Finished injecting variations");
-
 
         Constants.DEFAULT_DIFFICULTY_LIST = ["easy","normal","hard","erect","nightmare"];
 
@@ -183,34 +188,36 @@ class VariationInjector extends Module {
             }
         }
 
-        _finishedSetup = true;
+        trace("[vari-injector]  -  Finished setting up variations");
+
+        this._finishedSetup = true;
     }
 
 
     public override function onCreate(event:ScriptEvent):Void {
-        this.setup();
         super.onCreate();
+        setup();
     }
 
     public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
-        this.setup();
         super.onStateChangeEnd();
+        setup();
     }
 
 
-    var freeplayState:FreeplayState = null;
+    var _freeplayState:FreeplayState = null;
 
     public override function onSubStateOpenEnd(event:SubStateScriptEvent):Void {
         if (Std.isOfType(event.targetState, FreeplayState)) {
-            freeplayState = event.targetState;
+            _freeplayState = event.targetState;
         }
         super.onSubStateOpenEnd();
     }
 
     public override function onUpdate(event:UpdateScriptEvent):Void {
-        if (freeplayState != null) {
-            ArraySort.sort(freeplayState.diffIdsTotal,sortDifficulties);
-            freeplayState = null;
+        if (_freeplayState != null) {
+            ArraySort.sort(_freeplayState.diffIdsTotal,sortDifficulties);
+            _freeplayState = null;
         }
         super.onUpdate();
     }
