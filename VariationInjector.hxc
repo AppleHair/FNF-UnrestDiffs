@@ -1,4 +1,5 @@
 // TODO: Add more comments to this file
+import Array;
 import funkin.data.DataError;
 import funkin.data.song.SongRegistry;
 import funkin.modding.module.Module;
@@ -10,15 +11,10 @@ import funkin.util.assets.DataAssets;
 import funkin.util.Constants;
 import funkin.util.tools.ArrayTools;
 import haxe.ds.ArraySort;
+import haxe.Json;
 import openfl.utils.Assets;
+import String;
 import StringTools;
-
-class VariInjectionData {
-    public var songIds:Array<String>;
-    public function new() {
-        songIds = [];
-    }
-}
 
 /**
  * In order for this to work, the base
@@ -102,6 +98,12 @@ class VariationInjector extends Module {
         }
         trace('[vari-injector]  -  Failed to inject variations to song ('+songClassName+' , '+variId+')');
     }
+    
+    // I have to declare it here because
+    // Hscript forgets it too quickly if I don't.
+    // Used for error handling on setup.
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    var variIdERRORCHECK:String = "";
 
     function setup():Void {
         if (this._finishedSetup) {return;}
@@ -116,28 +118,29 @@ class VariationInjector extends Module {
         // because you can't inject the default variation to a song,
         // it'll always be there.
         variIdList.remove("default");
-
-        // Create a new parser for the variation injection data,
-        // which is a list of all songs that need to have a certaion
-        // variation injected.
-        var parser:json2object.JsonParser<VariInjectionData> = new json2object.JsonParser();
         
         // For each variation injection file,
         // parse it and inject the variation to
         // each song that needs it.
         for (variId in variIdList) {
             var path:String = Paths.json(_VART_INJECT_PATH_PREFIX+variId);
-            parser.fromJson(StringTools.trim(Assets.getText(path)), path);
-            for (error in parser.errors)
-            {
-                DataError.printError(error);
-            }
-            if (parser.errors.length > 0)
-            {
-                trace('[vari-injector]  FAILED to parse variation injection data: '+variId);
+            var result = Json.parse(StringTools.trim(Assets.getText(path)));
+            var valid = Std.isOfType(result.songIds, Array);
+            valid = valid && result.songIds.length > 0;
+            if (!valid) {
+                PolymodErrorHandler.showAlert("Variation Injection Error",
+                    "Failed to parse variation injection file: "+variId+
+                    "\nsongIds value was either not an array or was empty.");
                 continue;
             }
-            for (songId in ArrayTools.unique(parser.value.songIds)) {
+            variIdERRORCHECK = variId;
+            for (songId in ArrayTools.unique(result.songIds)) {
+                var validSong = Std.isOfType(songId, String);
+                if (!validSong) {
+                    PolymodErrorHandler.showAlert("Variation Injection Error", "A song id wasn't a string in"+
+                        "\nvariation injection file: "+variIdERRORCHECK+"\nFailed to parse song id value: "+songId);
+                    break;
+                }
                 this.injectVariationToSong(variId, songId);
             }
         }

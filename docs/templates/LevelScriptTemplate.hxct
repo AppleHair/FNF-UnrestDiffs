@@ -30,6 +30,8 @@ class LevelName extends Level {
     function new() {
         // fill your level id
         super("levelId");
+        // PLEASE KEEP THIS LINE!!!
+        this._defaultData = this._data;
     }
     // LEVEL SPECIFIC FUNCTIONS/ATTRIBUTES:
 
