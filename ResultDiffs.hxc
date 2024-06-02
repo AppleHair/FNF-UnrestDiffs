@@ -27,24 +27,24 @@ class ResultDiffs extends Module {
 
     // Used for tracking result screen on update.
     // PLEASE DON'T MODIFY THESE VARIABLES!!!
-    var _justEnteredResultScreen:Bool = false;
-    var _alreadyRanOnce:Bool = false;
+    var justEnteredResultScreen:Bool = false;
+    var alreadyRanOnce:Bool = false;
 
     public override function onSongEnd(event:ScriptEvent):Void {
-        this._alreadyRanOnce = false;
+        this.alreadyRanOnce = false;
     }
 
     public override function onUpdate(event:UpdateScriptEvent):Void {
-        if (Std.isOfType(FlxG.state.subState, ResultState) && !this._justEnteredResultScreen && !this._alreadyRanOnce) {
-            this._justEnteredResultScreen = true;
+        if (Std.isOfType(FlxG.state.subState, ResultState) && !this.justEnteredResultScreen && !this.alreadyRanOnce) {
+            this.justEnteredResultScreen = true;
             //trace('ResultDiffs ON');
             //trace(PlayState.instance.currentDifficulty);
-        } else if (this._justEnteredResultScreen) {
+        } else if (this.justEnteredResultScreen) {
             //trace('ResultDiffs OFF');
-            this._justEnteredResultScreen = false;
+            this.justEnteredResultScreen = false;
         } else {return;}
 
-        if (!this._justEnteredResultScreen) {return;}
+        if (!this.justEnteredResultScreen) {return;}
 
         // WHEN THE RESULT SCREEN OPENS IN THE END OF A SONG:
 
@@ -73,6 +73,6 @@ class ResultDiffs extends Module {
         FlxG.state.subState.difficulty.y += prvHeight - FlxG.state.subState.difficulty.height;
         FlxG.state.subState.songName.x -= prvWidth - FlxG.state.subState.difficulty.width;
 
-        this._alreadyRanOnce = true;
+        this.alreadyRanOnce = true;
     }
 }

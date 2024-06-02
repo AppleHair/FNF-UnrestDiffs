@@ -145,21 +145,21 @@ class Weekend1Level extends Level {
         // gets the songs normally
         var songs = super.getSongs();
         if (songs == null) {return null;}
-        // filter out songs that don't have
-        // the current difficulty
-        return songs.filter(
-            function(songId:String) {
-                // if we're in the story menu state
-                if (Std.isOfType(FlxG.state, StoryMenuState)) {
+        // if we're in the story menu state
+        if (Std.isOfType(FlxG.state, StoryMenuState)) {
+            // filter out songs that don't have
+            // the current difficulty
+            songs = songs.filter(
+                function(songId:String) {
                     // if the song doesn't have the  
                     // current difficulty, filter it out.
                     return SongRegistry.instance.fetchEntry(songId).
                         getDifficulty(FlxG.state.currentDifficultyId) != null;
                 }
-                // otherwise, keep the song.
-                return true;
-            }
-        );
+            );
+        }
+        
+        return songs;
 
         // using this method, we can display
         // the maximum amount of songs possible

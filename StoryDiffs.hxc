@@ -3,10 +3,13 @@ import flixel.FlxSprite;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import funkin.audio.FunkinSound;
+import funkin.data.song.SongRegistry;
 import funkin.data.story.level.LevelRegistry;
 import funkin.modding.module.Module;
 import funkin.modding.module.ModuleHandler;
 import funkin.Paths;
+import funkin.play.PlayState;
+import funkin.play.PlayStatePlaylist;
 import funkin.ui.story.Level;
 import funkin.ui.story.StoryMenuState;
 import funkin.util.assets.DataAssets;
@@ -29,40 +32,40 @@ class StoryDiffs extends Module {
 
     // Used for defining the level alt data paths.
     // PLEASE DON'T MODIFY THESE VARIABLES!!!
-    var _BASE_PREFIX_LADP:String = "UD/levels-alt/";
-    var _DIFFS_PREFIX_LADP:String = "difficulties/";
-    var _VARIS_PREFIX_LADP:String = "variations/";
+    var BASE_PREFIX_LADP:String = "UD/levels-alt/";
+    var DIFFS_PREFIX_LADP:String = "difficulties/";
+    var VARIS_PREFIX_LADP:String = "variations/";
 
     // Used for tracking level alt data.
     // PLEASE DON'T MODIFY THESE VARIABLES!!!
-    var _difficultiesToVariations:Array<Array<String>> = [[],[]];
-    var _levelAltData:Array<Array<Dynamic>> = [[],[]];
-    var _hasAltData:Array<String> = [];
+    var difficultiesToVariations:Array<Array<String>> = [[],[]];
+    var levelAltData:Array<Array<Dynamic>> = [[],[]];
+    var hasAltData:Array<String> = [];
 
     // Used for tracking the story mode menu.
     // PLEASE DON'T MODIFY THESE VARIABLES!!!
-    var _storyMenu:StoryMenuState = null;
-    var _justEnteredStoryMenu:Bool = false;
-    var _lastRememberedDifficulty:String = Constants.DEFAULT_DIFFICULTY;
-    var _lastDifficultyList:Array<String> = Constants.DEFAULT_DIFFICULTY_LIST_FULL;
-    var _lastRememberedLevel:String = Constants.DEFAULT_SONG;// "tutorial"
+    var storyMenu:StoryMenuState = null;
+    var justEnteredStoryMenu:Bool = false;
+    var lastRememberedDifficulty:String = Constants.DEFAULT_DIFFICULTY;
+    var lastDifficultyList:Array<String> = Constants.DEFAULT_DIFFICULTY_LIST_FULL;
+    var lastRememberedLevel:String = Constants.DEFAULT_SONG;// "tutorial"
 
     // PLEASE DON'T MODIFY THIS VARIABLE!!!
     /**
      * Used for tracking setup completion.
      */
-    var _finishedSetup:Bool = false;
+    var finishedSetup:Bool = false;
 
 
     public function addLevelAltDataForVariation(levelId:String, variationId:String):Void {
         trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on variation ('+variationId+')');
-        var path = Paths.json(_BASE_PREFIX_LADP+_VARIS_PREFIX_LADP+variationId+"/"+levelId);
+        var path = Paths.json(BASE_PREFIX_LADP+VARIS_PREFIX_LADP+variationId+"/"+levelId);
         if (!Assets.exists(path)) {return;}
         var difficulties:Array<String> = [];
-        for (diffIndex in 0..._difficultiesToVariations[1].length) {
-            if (_difficultiesToVariations[1][diffIndex] == variationId &&
-                !this._levelAltData[0].contains(_difficultiesToVariations[0][diffIndex]+levelId)) {
-                difficulties.push(_difficultiesToVariations[0][diffIndex]);
+        for (diffIndex in 0...difficultiesToVariations[1].length) {
+            if (difficultiesToVariations[1][diffIndex] == variationId &&
+                !this.levelAltData[0].contains(difficultiesToVariations[0][diffIndex]+levelId)) {
+                difficulties.push(difficultiesToVariations[0][diffIndex]);
             }
         }
         if (difficulties.length == 0) {return;}
@@ -72,12 +75,12 @@ class StoryDiffs extends Module {
         LevelRegistry.instance.fetchEntry(levelId).scriptCall("considerAddingSongs", [levelData.songs]);
 
         for (diff in difficulties) {
-            this._levelAltData[0].push(diff+levelId);
-            this._levelAltData[1].push(levelData);
+            this.levelAltData[0].push(diff+levelId);
+            this.levelAltData[1].push(levelData);
         }
 
-        if (!this._hasAltData.contains(levelId)) {
-            this._hasAltData.push(levelId);
+        if (!this.hasAltData.contains(levelId)) {
+            this.hasAltData.push(levelId);
         }
 
         trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on variation ('+variationId+')');
@@ -85,42 +88,42 @@ class StoryDiffs extends Module {
 
     public function addLevelAltDataForDifficulty(levelId:String, difficultyId:String):Void {
         trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
-        var path = Paths.json(_BASE_PREFIX_LADP+_DIFFS_PREFIX_LADP+difficultyId+"/"+levelId);
+        var path = Paths.json(BASE_PREFIX_LADP+DIFFS_PREFIX_LADP+difficultyId+"/"+levelId);
         if (!Assets.exists(path)) {return;}
 
         var levelData:Dynamic = LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path);
 
         LevelRegistry.instance.fetchEntry(levelId).scriptCall("considerAddingSongs", [levelData.songs]);
 
-        this._levelAltData[0].push(difficultyId+levelId);
-        this._levelAltData[1].push(levelData);
+        this.levelAltData[0].push(difficultyId+levelId);
+        this.levelAltData[1].push(levelData);
 
-        if (!this._hasAltData.contains(levelId)) {
-            this._hasAltData.push(levelId);
+        if (!this.hasAltData.contains(levelId)) {
+            this.hasAltData.push(levelId);
         }
         trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
     }
 
 
     function setup():Void {
-        if (this._finishedSetup) {return;}
+        if (this.finishedSetup) {return;}
 
         var levelIdList:Array<String> = [];
 
         // This is only used for reading
         // stuff and doesn't get modyfied.
-        this._difficultiesToVariations = ModuleHandler.
-            getModule("vari-injector").scriptGet("_difficultiesToVariations");
+        this.difficultiesToVariations = ModuleHandler.
+            getModule("vari-injector").scriptGet("difficultiesToVariations");
         
         // Making alt level data for the
         // default variation is not recommended.
         // Please use the default level data instead.
-        var allVariations:Array<String> = ArrayTools.unique(this._difficultiesToVariations[1]);
+        var allVariations:Array<String> = ArrayTools.unique(this.difficultiesToVariations[1]);
         allVariations.remove("default");
 
         for (variationId in allVariations) {
 
-            levelIdList = DataAssets.listDataFilesInPath(_BASE_PREFIX_LADP+_VARIS_PREFIX_LADP+variationId+"/", '.json').map(
+            levelIdList = DataAssets.listDataFilesInPath(BASE_PREFIX_LADP+VARIS_PREFIX_LADP+variationId+"/", '.json').map(
                 function(levelAltDataPath:String):String {
                     return levelAltDataPath.split('/')[0];
                 }
@@ -131,11 +134,11 @@ class StoryDiffs extends Module {
             }
         }
 
-        var allDifficulties:Array<String> = ArrayTools.unique(this._difficultiesToVariations[0]);
+        var allDifficulties:Array<String> = ArrayTools.unique(this.difficultiesToVariations[0]);
 
         for (difficultyId in allDifficulties) {
 
-            levelIdList = DataAssets.listDataFilesInPath(_BASE_PREFIX_LADP+_DIFFS_PREFIX_LADP+difficultyId+"/", '.json').map(
+            levelIdList = DataAssets.listDataFilesInPath(BASE_PREFIX_LADP+DIFFS_PREFIX_LADP+difficultyId+"/", '.json').map(
                 function(levelAltDataPath:String):String {
                     return levelAltDataPath.split('/')[0];
                 }
@@ -146,13 +149,13 @@ class StoryDiffs extends Module {
             }
         }
 
-        for (levelId in this._hasAltData) {
+        for (levelId in this.hasAltData) {
             LevelRegistry.instance.fetchEntry(levelId).scriptCall("resetDataToDefault", []);
         }
 
         trace('[story-diffs]  -  Setup completed successfully');
 
-        this._finishedSetup = true;
+        this.finishedSetup = true;
     }
 
     public override function onCreate(event:ScriptEvent):Void {
@@ -165,25 +168,25 @@ class StoryDiffs extends Module {
         // trace('called onStateChangeEnd');
         super.onStateChangeEnd();
         if (Std.isOfType(event.targetState, StoryMenuState)) {
-            this._storyMenu = event.targetState;
-            this._justEnteredStoryMenu = true;
-            this._storyMenu.persistentUpdate = true;
+            this.storyMenu = event.targetState;
+            this.justEnteredStoryMenu = true;
+            this.storyMenu.persistentUpdate = true;
             // trace('StoryDiffs ON');
-            // trace(this._lastRememberedDifficulty);
-            // trace(this._lastDifficultyList);
+            // trace(this.lastRememberedDifficulty);
+            // trace(this.lastDifficultyList);
         } else {
-            this._storyMenu = null;
+            this.storyMenu = null;
             // trace('StoryDiffs OFF');
-            // trace(this._lastRememberedDifficulty);
-            // trace(this._lastDifficultyList);
+            // trace(this.lastRememberedDifficulty);
+            // trace(this.lastDifficultyList);
         }
         setup();
     }
 
     public override function onUpdate(event:UpdateScriptEvent):Void {
-        if (this._storyMenu == null) {return;}
+        if (this.storyMenu == null) {return;}
         overrideCreationCall();
-        if (!this._storyMenu.exitingMenu) { if (!this._storyMenu.selectedLevel) {
+        if (!this.storyMenu.exitingMenu) { if (!this.storyMenu.selectedLevel) {
             boundDifficulty();
             forceDifficultyChange();
             determineArrowVisibility();
@@ -192,174 +195,199 @@ class StoryDiffs extends Module {
     }
 
     function overrideCreationCall():Void {
-        if (!this._justEnteredStoryMenu) {return;}
-        this._storyMenu.currentDifficultyId = "" + this._lastRememberedDifficulty;
-        StoryMenuState.rememberedDifficulty = "" + this._storyMenu.currentDifficultyId;
+        if (!this.justEnteredStoryMenu) {return;}
+        this.storyMenu.currentDifficultyId = "" + this.lastRememberedDifficulty;
+        StoryMenuState.rememberedDifficulty = "" + this.storyMenu.currentDifficultyId;
         determineArrowVisibility();
-        this._storyMenu.buildDifficultySprite();
-        this._storyMenu.funnyMusicThing();
-        this._storyMenu.updateText();
-        this._justEnteredStoryMenu = false;
+        this.storyMenu.buildDifficultySprite();
+        this.storyMenu.funnyMusicThing();
+        this.storyMenu.updateText();
+        this.justEnteredStoryMenu = false;
     }
 
     function boundDifficulty():Void {
-        if (this._storyMenu ==  null) {return;}
+        if (this.storyMenu ==  null) {return;}
 
-        var curDifficultyList = this._storyMenu.currentLevel.getDifficulties();
-        if (ArrayTools.isEqualUnordered(curDifficultyList, this._lastDifficultyList)) {return;}
+        var curDifficultyList = this.storyMenu.currentLevel.getDifficulties();
+        if (ArrayTools.isEqualUnordered(curDifficultyList, this.lastDifficultyList)) {return;}
         trace(curDifficultyList);
 
-        var newIndex:Int = curDifficultyList.indexOf(this._lastRememberedDifficulty);
+        var newIndex:Int = curDifficultyList.indexOf(this.lastRememberedDifficulty);
         if (newIndex == -1) {
-            newIndex = this._lastDifficultyList.indexOf(this._lastRememberedDifficulty);
+            newIndex = this.lastDifficultyList.indexOf(this.lastRememberedDifficulty);
             if (newIndex == -1) {newIndex = 0;}
-            newIndex = (newIndex / (this._lastDifficultyList.length-1)) * (curDifficultyList.length-1);
+            newIndex = (newIndex / (this.lastDifficultyList.length-1)) * (curDifficultyList.length-1);
         }
 
-        this._lastDifficultyList = curDifficultyList;
-        this._storyMenu.currentDifficultyId = "" + this._lastDifficultyList[newIndex];
-        StoryMenuState.rememberedDifficulty = "" + this._storyMenu.currentDifficultyId;
-        this._lastRememberedDifficulty = "" + StoryMenuState.rememberedDifficulty;
+        this.lastDifficultyList = curDifficultyList;
+        this.storyMenu.currentDifficultyId = "" + this.lastDifficultyList[newIndex];
+        StoryMenuState.rememberedDifficulty = "" + this.storyMenu.currentDifficultyId;
+        this.lastRememberedDifficulty = "" + StoryMenuState.rememberedDifficulty;
         // trace("difficulty bound successful");
     }
 
     function forceDifficultyChange():Void {
-        if (this._storyMenu ==  null) {return;}
+        if (this.storyMenu ==  null) {return;}
 
         var change:Int = 0;
-        if (this._storyMenu.controls.UI_RIGHT_P) {change++;}
-        if (this._storyMenu.controls.UI_LEFT_P) {change--;}
+        if (this.storyMenu.controls.UI_RIGHT_P) {change++;}
+        if (this.storyMenu.controls.UI_LEFT_P) {change--;}
         if (change == 0) {return;}
 
-        var currentIndex:Int = this._lastDifficultyList.indexOf(this._lastRememberedDifficulty) + change;
+        var currentIndex:Int = this.lastDifficultyList.indexOf(this.lastRememberedDifficulty) + change;
 
         // Wrap around
-        if (currentIndex < 0) {currentIndex = this._lastDifficultyList.length - 1;}
-        if (currentIndex >= this._lastDifficultyList.length) {currentIndex = 0;}
+        if (currentIndex < 0) {currentIndex = this.lastDifficultyList.length - 1;}
+        if (currentIndex >= this.lastDifficultyList.length) {currentIndex = 0;}
 
-        this._storyMenu.currentDifficultyId = "" + this._lastDifficultyList[currentIndex];
-        StoryMenuState.rememberedDifficulty = "" + this._storyMenu.currentDifficultyId;
-        this._lastRememberedDifficulty = "" + StoryMenuState.rememberedDifficulty;
+        this.storyMenu.currentDifficultyId = "" + this.lastDifficultyList[currentIndex];
+        StoryMenuState.rememberedDifficulty = "" + this.storyMenu.currentDifficultyId;
+        this.lastRememberedDifficulty = "" + StoryMenuState.rememberedDifficulty;
         // trace("forced difficulty change successful");
     }
 
     function determineArrowVisibility():Void {
-        if (this._storyMenu ==  null) {return;}
-        if (this._lastDifficultyList.length <= 1) {
-            this._storyMenu.leftDifficultyArrow.visible = false;
-            this._storyMenu.rightDifficultyArrow.visible = false;
+        if (this.storyMenu ==  null) {return;}
+        if (this.lastDifficultyList.length <= 1) {
+            this.storyMenu.leftDifficultyArrow.visible = false;
+            this.storyMenu.rightDifficultyArrow.visible = false;
             return;
         }
-        this._storyMenu.leftDifficultyArrow.visible = true;
-        this._storyMenu.rightDifficultyArrow.visible = true;
+        this.storyMenu.leftDifficultyArrow.visible = true;
+        this.storyMenu.rightDifficultyArrow.visible = true;
     }
 
+    // PLEASE DON'T MODIFY THESE VARIABLES!!!
     var prvData:Dynamic = null;
     var prvColor:Int = 0x0;
 
     function determineScrollBehavior():Void {
-        if (this._storyMenu ==  null) {return;}
-        if (this._storyMenu.controls.UI_RIGHT_P ||
-            this._storyMenu.controls.UI_LEFT_P ||
-            this._storyMenu.controls.UI_UP_P ||
-            this._storyMenu.controls.UI_DOWN_P)
+        if (this.storyMenu ==  null) {return;}
+        if (this.storyMenu.controls.UI_RIGHT_P ||
+            this.storyMenu.controls.UI_LEFT_P ||
+            this.storyMenu.controls.UI_UP_P ||
+            this.storyMenu.controls.UI_DOWN_P)
         {
-            this._storyMenu.buildDifficultySprite();
+            this.storyMenu.buildDifficultySprite();
             FunkinSound.stopAllAudio(false);
             FunkinSound.playOnce(Paths.sound('scrollMenu'), 0.4);
-            this._storyMenu.funnyMusicThing();
+            this.storyMenu.funnyMusicThing();
 
-            this.prvData = this._storyMenu.currentLevel._data;
-            this.prvColor = this._storyMenu.currentLevel.getBackgroundColor();
-            if (this._hasAltData.contains(this._storyMenu.currentLevelId)) {
+            this.prvData = this.storyMenu.currentLevel._data;
+            this.prvColor = this.storyMenu.currentLevel.getBackgroundColor();
+            if (this.hasAltData.contains(this.storyMenu.currentLevelId)) {
                 var loadedNewData:Bool = false;
                 loadedNewData = this.reloadLevelData();
                 if (!loadedNewData) {
-                    this._storyMenu.currentLevel.scriptCall("resetDataToDefault", []);
+                    this.storyMenu.currentLevel.scriptCall("resetDataToDefault", []);
                 }
             }
 
 
-            if (this._lastRememberedLevel != this._storyMenu.currentLevelId) {
-                var prvLevel:Level = LevelRegistry.instance.fetchEntry(this._lastRememberedLevel);
+            if (this.lastRememberedLevel != this.storyMenu.currentLevelId) {
+                var prvLevel:Level = LevelRegistry.instance.fetchEntry(this.lastRememberedLevel);
                 prvData = prvLevel._data;
                 prvColor = prvLevel.getBackgroundColor();
             }
             this.forceUpdateBackground();
 
-            if (prvData != this._storyMenu.currentLevel._data) {
-                this._storyMenu.updateProps();
-                this._storyMenu.currentLevelTitle.title.loadGraphic(
-                    Paths.image(this._storyMenu.currentLevel._data.titleAsset)
+            if (prvData != this.storyMenu.currentLevel._data) {
+                this.storyMenu.updateProps();
+                this.storyMenu.currentLevelTitle.title.loadGraphic(
+                    Paths.image(this.storyMenu.currentLevel._data.titleAsset)
                 );
             }
-            this._storyMenu.updateText();
-            this._storyMenu.refresh();
-            trace('difficulty sprite rebuild successful \n(difficultyId: "'+this._lastRememberedDifficulty+'")');
-            this._lastRememberedLevel = "" + this._storyMenu.currentLevelId;
+            this.storyMenu.updateText();
+            this.storyMenu.refresh();
+            trace('difficulty sprite rebuild successful \n(difficultyId: "'+this.lastRememberedDifficulty+'")');
+            this.lastRememberedLevel = "" + this.storyMenu.currentLevelId;
         }
     }
 
     function reloadLevelData():Bool {
-        if (this._storyMenu ==  null) {return;}
+        if (this.storyMenu ==  null) {return;}
         var newData:Dynamic = null;
-        if (this._levelAltData[0].contains(this._storyMenu.currentDifficultyId+this._storyMenu.currentLevelId)) {
-            newData = this._levelAltData[1][
-                this._levelAltData[0].indexOf(this._storyMenu.currentDifficultyId+this._storyMenu.currentLevelId)
+        if (this.levelAltData[0].contains(this.storyMenu.currentDifficultyId+this.storyMenu.currentLevelId)) {
+            newData = this.levelAltData[1][
+                this.levelAltData[0].indexOf(this.storyMenu.currentDifficultyId+this.storyMenu.currentLevelId)
             ];
         }
         if (newData != null) {
-            this._storyMenu.currentLevel.scriptCall("reloadData", [newData]);
+            this.storyMenu.currentLevel.scriptCall("reloadData", [newData]);
         }
         return newData != null;
     }
 
     function forceUpdateBackground():Void {
-        if (this._storyMenu ==  null) {return;}
+        if (this.storyMenu ==  null) {return;}
         // use a custom Background transition, which is
         // the same, but for switching between difficulties
-        var newColor:Int = this._storyMenu.currentLevel.getBackgroundColor();
+        var newColor:Int = this.storyMenu.currentLevel.getBackgroundColor();
 
-        if (this.prvData.background.charAt(0) == '#' && this._storyMenu.currentLevel._data.background.charAt(0) == '#') {
+        if (this.prvData.background.charAt(0) == '#' && this.storyMenu.currentLevel._data.background.charAt(0) == '#') {
             if (this.prvColor != newColor) {
                 // Both the previous and current level were simple backgrounds.
                 // Fade between colors directly, rather than fading one background out and another in.
                 // cancels potential tween in progress, and tweens from there
-                FlxTween.cancelTweensOf(this._storyMenu.levelBackground);
-                FlxTween.color(this._storyMenu.levelBackground, 0.9, this._storyMenu.levelBackground.color,
+                FlxTween.cancelTweensOf(this.storyMenu.levelBackground);
+                FlxTween.color(this.storyMenu.levelBackground, 0.9, this.storyMenu.levelBackground.color,
                     newColor, {ease: FlxEase.quartOut});
             } else {
                 // Both the previous and current level were simple backgrounds.
                 // No need to fade between colors, just update the color, because
                 // the previous call to updateBackground() from the source code
                 // might relay on data that changed already (in short, it's a bug fix)
-                FlxTween.cancelTweensOf(this._storyMenu.levelBackground);
-                this._storyMenu.levelBackground.color = newColor;
+                FlxTween.cancelTweensOf(this.storyMenu.levelBackground);
+                this.storyMenu.levelBackground.color = newColor;
             }
         } else {
             // Either the previous or current level has a complex background.
             // We need to fade the old background out and the new one in.
 
             // Reference the old background and fade it out.
-            var oldBackground:FlxSprite = this._storyMenu.levelBackground;
+            var oldBackground:FlxSprite = this.storyMenu.levelBackground;
             FlxTween.tween(oldBackground, {alpha: 0.0}, 0.6, {
                 ease: FlxEase.linear,
                 onComplete: function(_) {
-                    this._storyMenu.remove(oldBackground);
+                    this.storyMenu.remove(oldBackground);
                 }
             });
 
             // Build a new background and fade it in.
-            this._storyMenu.levelBackground = this._storyMenu.currentLevel.buildBackground();
-            this._storyMenu.levelBackground.x = 0;
-            this._storyMenu.levelBackground.y = 56;
-            this._storyMenu.levelBackground.alpha = 0.0; // Hidden to start.
-            this._storyMenu.levelBackground.zIndex = 100;
-            this._storyMenu.add(levelBackground);
+            this.storyMenu.levelBackground = this.storyMenu.currentLevel.buildBackground();
+            this.storyMenu.levelBackground.x = 0;
+            this.storyMenu.levelBackground.y = 56;
+            this.storyMenu.levelBackground.alpha = 0.0; // Hidden to start.
+            this.storyMenu.levelBackground.zIndex = 100;
+            this.storyMenu.add(levelBackground);
 
-            FlxTween.tween(this._storyMenu.levelBackground, {alpha: 1.0}, 0.6, {
+            FlxTween.tween(this.storyMenu.levelBackground, {alpha: 1.0}, 0.6, {
                 ease: FlxEase.linear
             });
         }
+    }
+
+    /**
+     * Handle difficulty changes from pause menu when in story mode
+     */
+    public override function onSongRetry(event:ScriptEvent):Void {
+        super.onSongRetry(event);
+
+        if (!PlayStatePlaylist.isStoryMode ||
+            PlayState.instance.currentDifficulty == this.lastRememberedDifficulty)
+        {return;}
+        
+        this.lastRememberedDifficulty = PlayState.instance.currentDifficulty;
+        
+        if (PlayStatePlaylist.playlistSongIds.length < 1) {return;}
+
+        PlayStatePlaylist.playlistSongIds = LevelRegistry.instance.
+            fetchEntry(this.lastRememberedLevel).getSongs().
+            filter(function(songId:String):Bool {
+                return SongRegistry.instance.fetchEntry(songId).
+                    getDifficulty(PlayState.instance.currentDifficulty) != null;
+            });
+        PlayStatePlaylist.playlistSongIds.splice(0,PlayStatePlaylist.
+            playlistSongIds.indexOf(PlayState.instance.currentSong));
     }
 }
