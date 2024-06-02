@@ -179,8 +179,11 @@ class RosesSong extends Song {
     {
         // uses the function normally, but while ignoring the 
         // variationIds parameter, to prevent freeplay from
-        // filtering out variations.
-        return super.listDifficulties(variationId,this.variations,showLocked,showHidden);
+        // filtering out variations. because variationId gets
+        // pushed into variationIds, we should pass an empty
+        // array to variationIds to allow variationId to
+        // filter the returned list.
+        return super.listDifficulties(variationId,variationId != null ? [] : this.variations,showLocked,showHidden);
     }
 
     //---------------------------------------//

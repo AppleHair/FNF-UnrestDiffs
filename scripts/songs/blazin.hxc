@@ -188,9 +188,13 @@ class BlazinSong extends Song {
         showHidden:Bool = false):Array<String>
     {
         if (showLocked || Save.instance.hasBeatenLevel('weekend1')) {
-            // uses the function normally, but while ignoring the variationIds
-            // parameter, to prevent freeplay from filtering out variations.
-            return super.listDifficulties(variationId,this.variations,showLocked,showHidden);
+            // uses the function normally, but while ignoring the 
+            // variationIds parameter, to prevent freeplay from
+            // filtering out variations. because variationId gets
+            // pushed into variationIds, we should pass an empty
+            // array to variationIds to allow variationId to
+            // filter the returned list.
+            return super.listDifficulties(variationId,variationId != null ? [] : this.variations,showLocked,showHidden);
         }
         // Here I added the check Std.isOfType(FlxG.state, StoryMenuState)
         // In order for the base game weekend1 to always show up on story mode.
