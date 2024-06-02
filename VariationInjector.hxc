@@ -1,11 +1,15 @@
 // TODO: Add more comments to this file
 import Array;
+import flixel.text.FlxText;
 import funkin.data.DataError;
 import funkin.data.song.SongRegistry;
 import funkin.modding.module.Module;
 import funkin.modding.PolymodErrorHandler;
 import funkin.Paths;
+import funkin.play.PauseSubState;
+import funkin.play.PlayState;
 import funkin.play.song.Song;
+import funkin.ui.AtlasText;
 import funkin.ui.freeplay.FreeplayState;
 import funkin.util.assets.DataAssets;
 import funkin.util.Constants;
@@ -210,21 +214,119 @@ class VariationInjector extends Module {
         setup();
     }
 
-
     var freeplayState:FreeplayState = null;
 
     public override function onSubStateOpenEnd(event:SubStateScriptEvent):Void {
+        super.onSubStateOpenEnd();
         if (Std.isOfType(event.targetState, FreeplayState)) {
             freeplayState = event.targetState;
         }
-        super.onSubStateOpenEnd();
     }
 
+    var capturedDiscordRPC:Bool = false;
+    var tmpDiff:String = "";
+
     public override function onUpdate(event:UpdateScriptEvent):Void {
+        super.onUpdate();
         if (freeplayState != null) {
             ArraySort.sort(freeplayState.diffIdsTotal,sortDifficulties);
             freeplayState = null;
         }
-        super.onUpdate();
+        
+        if (PlayState.instance == null) {
+            capturedDiscordRPC = false;
+            return;
+        }
+        if (capturedDiscordRPC && !PlayState.instance.needsReset) {return;}
+
+        tmpDiff = PlayState.instance.currentDifficulty;
+        PlayState.instance.currentDifficulty = this.
+            trimDifficultyName(PlayState.instance.currentDifficulty, PlayState.instance.currentVariation);
+        PlayState.instance.initDiscord();
+        PlayState.instance.currentDifficulty = tmpDiff;
+
+        capturedDiscordRPC = true;
+    }
+
+    /**
+     * Converts a string to title case. For example, "hello world" becomes "Hello World".
+     *
+     * @param value The string to convert.
+     * @return The converted string.
+     */
+    function toTitleCase(value:String):String {
+        var words:Array<String> = value.split(' ');
+        var result:String = '';
+        for (i in 0...words.length) {
+            var word:String = words[i];
+            result += word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
+            if (i < words.length - 1) {
+                result += ' ';
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Strip a given prefix from a string.
+     * @param value The string to strip.
+     * @param prefix The prefix to strip. If the prefix isn't found, the original string is returned.
+     * @return The stripped string.
+     */
+    function stripPrefix(value:String, prefix:String):String {
+        if (StringTools.startsWith(value,prefix)) {
+            return value.substr(prefix.length);
+        }
+        return value;
+    }
+
+    function trimDifficultyName(diff:String, vari:String):String {
+        var result = stripPrefix(diff, vari);
+        if (diff.length <= vari.length) {result = diff;}
+        return toTitleCase(result);
+    }
+
+    function pauseMetadataDifficultyNameReplacer(entry:FlxText):Void {
+        if (!StringTools.startsWith(entry.text,"Difficulty: ")) {return;}
+
+        entry.text = "Difficulty: "+this.trimDifficultyName(
+            PlayState.instance.currentDifficulty,
+            PlayState.instance.currentVariation
+        );
+    }
+
+    function pauseDifficultyChangeListNameReplacer(entry:AtlasText):Void {
+        var diffList = PlayState.instance.currentSong.
+            listDifficulties(PlayState.instance.currentVariation, true);
+        if (!diffList.contains(entry.text.toLowerCase())) {return;}
+
+        entry.text = this.trimDifficultyName(
+            entry.text.toLowerCase(),
+            PlayState.instance.currentVariation
+        );
+    }
+
+    var pauseSubstate:PauseSubState = null;
+
+    function pauseDifficultyNameReplacer(maybeSomething):Void {
+        if (this.pauseSubstate == null) {return;}
+
+        if (this.pauseSubstate.metadata == maybeSomething) {
+            this.pauseSubstate.metadata.group.memberAdded.
+                add(this.pauseMetadataDifficultyNameReplacer);
+        }
+
+        if (this.pauseSubstate.menuEntryText != maybeSomething) {return;}
+
+        this.pauseSubstate.menuEntryText.group.memberAdded.
+            add(this.pauseDifficultyChangeListNameReplacer);
+    }
+
+    public override function onSubStateOpenBegin(event:SubStateScriptEvent):Void {
+        super.onSubStateOpenBegin(event);
+        if (Std.isOfType(event.targetState, PauseSubState)) {
+            this.pauseSubstate = event.targetState;
+            this.pauseSubstate.memberAdded.add(this.pauseDifficultyNameReplacer);
+        }
     }
 }

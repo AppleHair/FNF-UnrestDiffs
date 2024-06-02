@@ -388,6 +388,6 @@ class StoryDiffs extends Module {
                     getDifficulty(PlayState.instance.currentDifficulty) != null;
             });
         PlayStatePlaylist.playlistSongIds.splice(0,PlayStatePlaylist.
-            playlistSongIds.indexOf(PlayState.instance.currentSong));
+            playlistSongIds.indexOf(PlayState.instance.currentSong.id));
     }
 }
