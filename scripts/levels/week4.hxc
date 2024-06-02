@@ -16,7 +16,7 @@ class Week4Level extends Level {
     function new() {
         super("week4");
         // PLEASE KEEP THIS LINE!!!
-        this._defaultData = this._data;
+        this.defaultData = this._data;
     }
     // LEVEL SPECIFIC FUNCTIONS/ATTRIBUTES:
 
@@ -29,7 +29,7 @@ class Week4Level extends Level {
      * so we can reset the data to the default data
      * after loading alt level data.
      */
-    var _defaultData:Dynamic = null;
+    var defaultData:Dynamic = null;
 
     //-----------------------------------------//
     //   LEVEL DATA RELOADING DON'T TOUCH!!!   //
@@ -46,10 +46,10 @@ class Week4Level extends Level {
         this._data = newData;
         // I won't let you hide the level from
         // story mode if it's not already hidden.
-        this._data.visible = this._defaultData.visible;
+        this._data.visible = this.defaultData.visible;
         // Adding songs to alt levels
         // gets handles somewhere else.
-        this._data.songs = this._defaultData.songs;
+        this._data.songs = this.defaultData.songs;
     }
 
     //-----------------------------------------//
@@ -63,7 +63,7 @@ class Week4Level extends Level {
      */
     public function resetDataToDefault():Void {
         // resets the data to the default data
-        this._data = this._defaultData;
+        this._data = this.defaultData;
     }
 
     //-----------------------------------------//
@@ -78,7 +78,7 @@ class Week4Level extends Level {
         // the song list needs to have all the songs the level
         // already has, and if the level already has all the songs
         // in the song list, we don't need to add them again.
-        if (ArrayTools.isSuperset(this._defaultData.songs,songs) ||
+        if (ArrayTools.isSuperset(this.defaultData.songs,songs) ||
             !ArrayTools.isSuperset(songs, this._data.songs)) {return;}
 
         // we'll use this array as a queue, where song's
@@ -88,15 +88,15 @@ class Week4Level extends Level {
         for (songId in songs) {
             // if the song isn't already in the
             // level's song list, add it to the queue.
-            if (this._defaultData.songs.indexOf(songId) == -1) {
+            if (this.defaultData.songs.indexOf(songId) == -1) {
                 accumulatedSongsQueue.push(songId);
                 continue;
             }
             // otherwise, insert the songs accumulated in the queue
             // behind the current song in the default songs list.
             while (accumulatedSongsQueue.length > 0) {
-                this._defaultData.songs.insert(
-                    this._defaultData.songs.indexOf(songId),
+                this.defaultData.songs.insert(
+                    this.defaultData.songs.indexOf(songId),
                     accumulatedSongsQueue.shift()
                 );
             }
@@ -104,7 +104,7 @@ class Week4Level extends Level {
         // push all the remaining songs from the
         // queue to the end of the default songs list.
         while (accumulatedSongsQueue.length > 0) {
-            this._defaultData.songs.push(accumulatedSongsQueue.shift());
+            this.defaultData.songs.push(accumulatedSongsQueue.shift());
         }
 
         // using this method, we can add songs to the
@@ -171,7 +171,7 @@ class Week4Level extends Level {
      * I'm using this array to track the difficulties I
      * return in getDifficulties.
      */
-    var _difficulties:Array<String> = [];
+    var difficulties:Array<String> = [];
 
     //-----------------------------------------//
     //       DON'T EDIT THIS FUNCTION IF       //
@@ -183,7 +183,7 @@ class Week4Level extends Level {
      */
     public override function getDifficulties():Array<String> {
         // calibrates the difficulties array
-        this._difficulties = [];
+        this.difficulties = [];
         // declare the song variable
         var song:Null<Song> = null;
         // iterate through the songs
@@ -202,14 +202,14 @@ class Week4Level extends Level {
                 // push the difficulty to the
                 // difficulties array if it's not
                 // already there
-                ArrayTools.pushUnique(this._difficulties, diff);
+                ArrayTools.pushUnique(this.difficulties, diff);
             }
         }
         // sort the difficulties array
-        this._difficulties.sort(this.sortingStoryDiffs);
+        this.difficulties.sort(this.sortingStoryDiffs);
         // return the final 
         // sorted difficulties array
-        return this._difficulties;
+        return this.difficulties;
 
         // Using this method, we can display
         // the maximum amount of difficulties
