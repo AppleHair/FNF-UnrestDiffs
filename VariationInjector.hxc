@@ -241,7 +241,7 @@ class VariationInjector extends Module {
 
         tmpDiff = PlayState.instance.currentDifficulty;
         PlayState.instance.currentDifficulty = this.
-            trimDifficultyName(PlayState.instance.currentDifficulty, PlayState.instance.currentVariation);
+            trimDifficultyName(PlayState.instance.currentDifficulty,PlayState.instance.currentVariation,false);
         PlayState.instance.initDiscord();
         PlayState.instance.currentDifficulty = tmpDiff;
 
@@ -280,13 +280,14 @@ class VariationInjector extends Module {
         return value;
     }
 
-    function trimDifficultyName(diff:String, vari:String):String {
+    function trimDifficultyName(diff:String, vari:String, ?title:Bool = true):String {
         var result = stripPrefix(diff, vari);
         if (diff.length <= vari.length) {result = diff;}
-        return toTitleCase(result);
+        return title ? toTitleCase(result) : result;
     }
 
     function pauseMetadataDifficultyNameReplacer(entry:FlxText):Void {
+        if (PlayState.instance == null) {return;}
         if (!StringTools.startsWith(entry.text,"Difficulty: ")) {return;}
 
         entry.text = "Difficulty: "+this.trimDifficultyName(
@@ -295,18 +296,24 @@ class VariationInjector extends Module {
         );
     }
 
+    var pauseSubstate:PauseSubState = null;
+
     function pauseDifficultyChangeListNameReplacer(entry:AtlasText):Void {
+        if (PlayState.instance == null) {return;}
+        if (this.pauseSubstate == null) {return;}
+        if (this.pauseSubstate.currentMenuEntries == null) {return;}
+
+        var entriesLen = this.pauseSubstate.currentMenuEntries.length;
+        if (this.pauseSubstate.currentMenuEntries[entriesLen-1].text != 'Back') {return;}
+
         var diffList = PlayState.instance.currentSong.
             listDifficulties(PlayState.instance.currentVariation, true);
-        if (!diffList.contains(entry.text.toLowerCase())) {return;}
 
-        entry.text = this.trimDifficultyName(
-            entry.text.toLowerCase(),
-            PlayState.instance.currentVariation
-        );
+        var index = this.pauseSubstate.menuEntryText.group.members.indexOf(entry);
+        if (index == -1 || index >= diffList.length) {return;}
+
+        entry.text = this.trimDifficultyName(diffList[index],PlayState.instance.currentVariation,false);
     }
-
-    var pauseSubstate:PauseSubState = null;
 
     function pauseDifficultyNameReplacer(maybeSomething):Void {
         if (this.pauseSubstate == null) {return;}
