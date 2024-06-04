@@ -5,6 +5,7 @@ import flixel.tweens.FlxTween;
 import funkin.audio.FunkinSound;
 import funkin.data.song.SongRegistry;
 import funkin.data.story.level.LevelRegistry;
+import funkin.modding.events.ScriptEvent;
 import funkin.modding.module.Module;
 import funkin.modding.module.ModuleHandler;
 import funkin.Paths;
@@ -14,6 +15,7 @@ import funkin.ui.story.Level;
 import funkin.ui.story.StoryMenuState;
 import funkin.util.assets.DataAssets;
 import funkin.util.Constants;
+import funkin.util.ReflectUtil;
 import funkin.util.tools.ArrayTools;
 import openfl.utils.Assets;
 import StringTools;
@@ -28,7 +30,16 @@ class StoryDiffs extends Module {
     function new()
     {
         super('story-diffs', 1);
+        if (StoryMenuState.rememberedLevelId != null) {
+            this.lastRememberedLevel = StoryMenuState.rememberedLevelId;
+        }
     }
+
+    // PLEASE DON'T MODIFY THESE VARIABLES!!!
+    var ENTERED:String = "UD_STORY_ENTER";
+    var SCROLLED:String = "UD_STORY_SCROLL";
+    var CONFIRMED:String = "UD_STORY_CONFIRM";
+    var EXITED:String = "UD_STORY_EXIT";
 
     // Used for defining the level alt data paths.
     // PLEASE DON'T MODIFY THESE VARIABLES!!!
@@ -46,7 +57,7 @@ class StoryDiffs extends Module {
     // PLEASE DON'T MODIFY THESE VARIABLES!!!
     var storyMenu:StoryMenuState = null;
     var justEnteredStoryMenu:Bool = false;
-    var lastRememberedDifficulty:String = Constants.DEFAULT_DIFFICULTY;
+    var lastRememberedDifficulty:String = StoryMenuState.rememberedDifficulty;
     var lastDifficultyList:Array<String> = Constants.DEFAULT_DIFFICULTY_LIST_FULL;
     var lastRememberedLevel:String = Constants.DEFAULT_SONG;// "tutorial"
 
@@ -56,8 +67,12 @@ class StoryDiffs extends Module {
      */
     var finishedSetup:Bool = false;
 
+    function dispatchEvent(event:ScriptEvent):Void {
+        trace('[story-diffs]  -  Dispatching event ('+event.type+')');
+        ModuleHandler.callEvent(event);
+    }
 
-    public function addLevelAltDataForVariation(levelId:String, variationId:String):Void {
+    function addLevelAltDataForVariation(levelId:String, variationId:String):Void {
         trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on variation ('+variationId+')');
         var path = Paths.json(BASE_PREFIX_LADP+VARIS_PREFIX_LADP+variationId+"/"+levelId);
         if (!Assets.exists(path)) {return;}
@@ -86,7 +101,7 @@ class StoryDiffs extends Module {
         trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on variation ('+variationId+')');
     }
 
-    public function addLevelAltDataForDifficulty(levelId:String, difficultyId:String):Void {
+    function addLevelAltDataForDifficulty(levelId:String, difficultyId:String):Void {
         trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
         var path = Paths.json(BASE_PREFIX_LADP+DIFFS_PREFIX_LADP+difficultyId+"/"+levelId);
         if (!Assets.exists(path)) {return;}
@@ -174,7 +189,7 @@ class StoryDiffs extends Module {
             // trace('StoryDiffs ON');
             // trace(this.lastRememberedDifficulty);
             // trace(this.lastDifficultyList);
-        } else {
+        } else if (this.storyMenu != null) {
             this.storyMenu = null;
             // trace('StoryDiffs OFF');
             // trace(this.lastRememberedDifficulty);
@@ -186,22 +201,35 @@ class StoryDiffs extends Module {
     public override function onUpdate(event:UpdateScriptEvent):Void {
         if (this.storyMenu == null) {return;}
         overrideCreationCall();
-        if (!this.storyMenu.exitingMenu) { if (!this.storyMenu.selectedLevel) {
-            boundDifficulty();
-            forceDifficultyChange();
-            determineArrowVisibility();
-            determineScrollBehavior();
-        }}
+        if (!this.storyMenu.exitingMenu) {
+            if (!this.storyMenu.selectedLevel) {
+                boundDifficulty();
+                forceDifficultyChange();
+                determineArrowVisibility();
+                determineScrollBehavior();
+                if (this.storyMenu.controls.ACCEPT) {
+                    this.dispatchEvent(new ScriptEvent(this.CONFIRMED));
+                }
+            } else {
+                this.dispatchEvent(new ScriptEvent(this.CONFIRMED));
+                this.storyMenu = null;
+            }
+        } else {
+            this.dispatchEvent(new ScriptEvent(this.EXITED));
+            this.storyMenu = null;
+        }
     }
 
     function overrideCreationCall():Void {
         if (!this.justEnteredStoryMenu) {return;}
-        this.storyMenu.currentDifficultyId = "" + this.lastRememberedDifficulty;
-        StoryMenuState.rememberedDifficulty = "" + this.storyMenu.currentDifficultyId;
+        this.storyMenu.currentDifficultyId = this.lastRememberedDifficulty;
+        StoryMenuState.rememberedDifficulty = this.storyMenu.currentDifficultyId;
         determineArrowVisibility();
         this.storyMenu.buildDifficultySprite();
         this.storyMenu.funnyMusicThing();
         this.storyMenu.updateText();
+        this.storyMenu.refresh();
+        this.dispatchEvent(new ScriptEvent(this.ENTERED));
         this.justEnteredStoryMenu = false;
     }
 
@@ -220,9 +248,9 @@ class StoryDiffs extends Module {
         }
 
         this.lastDifficultyList = curDifficultyList;
-        this.storyMenu.currentDifficultyId = "" + this.lastDifficultyList[newIndex];
-        StoryMenuState.rememberedDifficulty = "" + this.storyMenu.currentDifficultyId;
-        this.lastRememberedDifficulty = "" + StoryMenuState.rememberedDifficulty;
+        this.storyMenu.currentDifficultyId = this.lastDifficultyList[newIndex];
+        StoryMenuState.rememberedDifficulty = this.storyMenu.currentDifficultyId;
+        this.lastRememberedDifficulty = StoryMenuState.rememberedDifficulty;
         // trace("difficulty bound successful");
     }
 
@@ -240,9 +268,9 @@ class StoryDiffs extends Module {
         if (currentIndex < 0) {currentIndex = this.lastDifficultyList.length - 1;}
         if (currentIndex >= this.lastDifficultyList.length) {currentIndex = 0;}
 
-        this.storyMenu.currentDifficultyId = "" + this.lastDifficultyList[currentIndex];
-        StoryMenuState.rememberedDifficulty = "" + this.storyMenu.currentDifficultyId;
-        this.lastRememberedDifficulty = "" + StoryMenuState.rememberedDifficulty;
+        this.storyMenu.currentDifficultyId = this.lastDifficultyList[currentIndex];
+        StoryMenuState.rememberedDifficulty = this.storyMenu.currentDifficultyId;
+        this.lastRememberedDifficulty = StoryMenuState.rememberedDifficulty;
         // trace("forced difficulty change successful");
     }
 
@@ -300,7 +328,9 @@ class StoryDiffs extends Module {
             this.storyMenu.updateText();
             this.storyMenu.refresh();
             trace('difficulty sprite rebuild successful \n(difficultyId: "'+this.lastRememberedDifficulty+'")');
-            this.lastRememberedLevel = "" + this.storyMenu.currentLevelId;
+            this.lastRememberedLevel = this.storyMenu.currentLevelId;
+            
+            this.dispatchEvent(new ScriptEvent(this.SCROLLED));
         }
     }
 
