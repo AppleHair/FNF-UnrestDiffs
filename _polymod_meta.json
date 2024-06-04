@@ -2,9 +2,10 @@
   "title": "Unrestricted Difficulties",
   "description": "This module hackes the planned story menu difficulty behavior back into the game, works around freeplay difficulty restrictions, lets you inject custom variations to existing songs without collisions between mods, lets you add custom difficulty sprites for the result screen and implements the rating sorting on freeplay, which opens the door for much more flexability in difficulty modding for the base game.",
   "contributors": [{
-    "name": "AppleHair"
+    "name": "AppleHair",
+    "role": "Developer"
   }],
   "api_version": "0.1.0",
-  "mod_version": "2.0.0",
-  "license": "Apache-2.0"
+  "mod_version": "3.0.0",
+  "license": "MIT License"
 }
