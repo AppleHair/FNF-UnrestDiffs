@@ -145,7 +145,7 @@ class VariationInjector extends Module {
                 continue;
             }
             variIdERRORCHECK = variId;
-            for (songId in ArrayTools.unique(result.songIds)) {
+            for (songId in result.songIds) {
                 var validSong = Std.isOfType(songId, String);
                 if (!validSong) {
                     PolymodErrorHandler.showAlert("Variation Injection Error", "A song id wasn't a string in"+

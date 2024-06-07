@@ -9,6 +9,7 @@ import funkin.util.StructureUtil;
 import funkin.util.tools.ArrayTools;
 import haxe.ds.ArraySort;
 import haxe.Json;
+import Int;
 import openfl.utils.Assets;
 import StringTools;
 
@@ -90,7 +91,12 @@ class DiffSorter extends Module {
 
         var sortingData:Dynamic;
         
-        var allVariations:Array<String> = ArrayTools.unique(this.difficultiesToVariations[1]);
+        var allVariations:Array<String> = [];
+        for (variationId in this.difficultiesToVariations[1]) {
+            if (!allVariations.contains(variationId)) {
+                allVariations.push(variationId);
+            }
+        }
         allVariations.remove("default");
         allVariations.remove("erect");
 
@@ -123,7 +129,7 @@ class DiffSorter extends Module {
             }
         }
 
-        var allDifficulties:Array<String> = ArrayTools.unique(this.difficultiesToVariations[0]);
+        var allDifficulties:Array<String> = this.difficultiesToVariations[0].copy();
         allDifficulties.filter(function(difficultyId:String):Bool {
             return !this.difficultySorting[0].contains(difficultyId);
         });
@@ -136,7 +142,7 @@ class DiffSorter extends Module {
             this.difficultySorting[1].push(Std.string(sortingData.index));
         }
 
-        Constants.DEFAULT_DIFFICULTY_LIST = ArrayTools.unique(this.difficultiesToVariations[0]);
+        Constants.DEFAULT_DIFFICULTY_LIST = this.difficultiesToVariations[0].copy();
         ArraySort.sort(Constants.DEFAULT_DIFFICULTY_LIST, sortDifficulties);
 
         trace('[diff-sorter]  -  Finished Sorting Difficulties');

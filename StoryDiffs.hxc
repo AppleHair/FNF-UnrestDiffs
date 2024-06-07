@@ -132,7 +132,12 @@ class StoryDiffs extends Module {
         // Making alt level data for the
         // default variation is not recommended.
         // Please use the default level data instead.
-        var allVariations:Array<String> = ArrayTools.unique(this.difficultiesToVariations[1]);
+        var allVariations:Array<String> = [];
+        for (variationId in this.difficultiesToVariations[1]) {
+            if (!allVariations.contains(variationId)) {
+                allVariations.push(variationId);
+            }
+        }
         allVariations.remove("default");
 
         for (variationId in allVariations) {
@@ -148,7 +153,7 @@ class StoryDiffs extends Module {
             }
         }
 
-        var allDifficulties:Array<String> = ArrayTools.unique(this.difficultiesToVariations[0]);
+        var allDifficulties:Array<String> = this.difficultiesToVariations[0].copy();
 
         for (difficultyId in allDifficulties) {
 
