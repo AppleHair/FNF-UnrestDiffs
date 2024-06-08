@@ -5,7 +5,7 @@ import funkin.modding.PolymodErrorHandler;
 import funkin.Paths;
 import funkin.ui.freeplay.FreeplayState;
 import funkin.util.Constants;
-import funkin.util.StructureUtil;
+// import funkin.util.StructureUtil;
 import funkin.util.tools.ArrayTools;
 import haxe.ds.ArraySort;
 import haxe.Json;
@@ -106,27 +106,27 @@ class DiffSorter extends Module {
             if (sortingData == null) {continue;}
             this.variationSorting[0].push(variationId);
             this.variationSorting[1].push(Std.string(sortingData.index));
-            if (sortingData.difficultyIndices == null) {continue;}
-            var diffIndexMap = StructureUtil.toMap(sortingData.difficultyIndices);
-            for (difficultyId in diffIndexMap.keys()) {
-                if (this.difficultiesToVariations[1][this.difficultiesToVariations[0]
-                    .indexOf(difficultyId)] != variationId)
-                {
-                    PolymodErrorHandler.showAlert("Difficulty Sorting Error",
-                        "The difficulty sorting data at "+path+" is invalid."+
-                        "\nTried to sort a difficulty that doesn't belong to the variation.");
-                    continue;
-                }
-                var index = diffIndexMap[difficultyId];
-                if (!Std.isOfType(index, Int)) {
-                    PolymodErrorHandler.showAlert("Difficulty Sorting Error",
-                        "The difficulty sorting data at "+path+" is invalid."+
-                        "\nan index in the difficultyIndices map wasn't an integer.");
-                    continue;
-                }
-                this.difficultySorting[0].push(difficultyId);
-                this.difficultySorting[1].push(Std.string(index));
-            }
+            // if (sortingData.difficultyIndices == null) {continue;}
+            // var diffIndexMap = StructureUtil.toMap(sortingData.difficultyIndices);
+            // for (difficultyId in diffIndexMap.keys()) {
+            //     if (this.difficultiesToVariations[1][this.difficultiesToVariations[0]
+            //         .indexOf(difficultyId)] != variationId)
+            //     {
+            //         PolymodErrorHandler.showAlert("Difficulty Sorting Error",
+            //             "The difficulty sorting data at "+path+" is invalid."+
+            //             "\nTried to sort a difficulty that doesn't belong to the variation.");
+            //         continue;
+            //     }
+            //     var index = diffIndexMap[difficultyId];
+            //     if (!Std.isOfType(index, Int)) {
+            //         PolymodErrorHandler.showAlert("Difficulty Sorting Error",
+            //             "The difficulty sorting data at "+path+" is invalid."+
+            //             "\nan index in the difficultyIndices map wasn't an integer.");
+            //         continue;
+            //     }
+            //     this.difficultySorting[0].push(difficultyId);
+            //     this.difficultySorting[1].push(Std.string(index));
+            // }
         }
 
         var allDifficulties:Array<String> = this.difficultiesToVariations[0].copy();

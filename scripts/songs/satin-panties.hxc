@@ -5,12 +5,23 @@ import funkin.data.song.SongMetadata;
 import funkin.play.song.Song;
 import funkin.play.song.SongDifficulty;
 import funkin.util.Constants;
+// SONG SPECIFIC IMPORTS
+import funkin.save.Save;
 
 class SatinPantiesSong extends Song {
 
     function new() {
         super("satin-panties");
     }
+    // SONG SPECIFIC FUNCTIONS / ATTRIBUTES:
+
+    public override function isSongNew(currentDifficulty:String):Bool {
+		if(currentDifficulty == 'erect' || currentDifficulty == 'nightmare') {
+			return !Save.instance.hasBeatenSong(this.id, ['erect', 'nightmare']);
+		}
+        return false;
+	}
+
     // UNRISTRICTED DIFFICULTIES' FUNCTIONS:
 
     //--------------------------------------//

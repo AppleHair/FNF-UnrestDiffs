@@ -64,9 +64,6 @@ class TwoHOTSong extends Song {
 
     function onSongRetry(event:ScriptEvent) {
         super.onSongRetry(event);
-
-        hasPlayedCutscene = true;
-
         removeCans();
         gunCocked = false;
     }
@@ -157,7 +154,7 @@ class TwoHOTSong extends Song {
             PlayState.instance.refresh();
         } else {
             VideoCutscene.onVideoStarted.add(endCutscene);
-            
+
             PlayState.instance.currentStage.getBoyfriend().danceEvery = 0;
             PlayState.instance.currentStage.getDad().danceEvery = 0;
         }
@@ -494,8 +491,8 @@ class TwoHOTSong extends Song {
         ?variationIds:Array<String>, showLocked:Bool = false,
         showHidden:Bool = false):Array<String>
     {
-        if (showLocked || Save.instance.hasBeatenLevel('weekend1')) {   
-            // uses the function normally, but while ignoring the 
+        if (showLocked || Save.instance.hasBeatenLevel('weekend1')) {
+            // uses the function normally, but while ignoring the
             // variationIds parameter, to prevent freeplay from
             // filtering out variations. because variationId gets
             // pushed into variationIds, we should pass an empty
