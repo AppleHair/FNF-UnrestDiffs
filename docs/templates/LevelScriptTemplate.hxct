@@ -145,33 +145,25 @@ class LevelName extends Level {
         // song script's constructor.
     }
 
-    //-----------------------------------------//
-    //       DON'T EDIT THIS FUNCTION IF       //
-    //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
-    //-----------------------------------------//
+    // TO story-diffs:
     /**
      * Get the list of songs in this level, as an array of IDs.
      * @return Array<String>
      */
-    public override function getSongs():Array<String> {
+    function getSongsFR(level:Level, difficulty:String):Array<String> {
         // gets the songs normally
-        var songs = super.getSongs();
+        var songs = level.getSongs();
         if (songs == null) {return null;}
-        // if we're in the story menu state
-        if (Std.isOfType(FlxG.state, StoryMenuState)) {
-            // filter out songs that don't have
-            // the current difficulty
-            songs = songs.filter(
-                function(songId:String) {
-                    // if the song doesn't have the  
-                    // current difficulty, filter it out.
-                    return SongRegistry.instance.fetchEntry(songId).
-                        getDifficulty(FlxG.state.currentDifficultyId) != null;
-                }
-            );
-        }
-        
-        return songs;
+        // filter out songs that don't have
+        // the provided difficulty
+        return songs.filter(
+            function(songId:String) {
+                // if the song doesn't have the  
+                // current difficulty, filter it out.
+                return SongRegistry.instance.fetchEntry(songId).
+                    getDifficulty(difficulty) != null;
+            }
+        );
 
         // using this method, we can display
         // the maximum amount of songs possible
@@ -183,31 +175,29 @@ class LevelName extends Level {
     }
 
 
-    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    
     // I have to declare it here because
     // Hscript forgets it too quickly if I don't.
     /**
      * I'm using this array to track the difficulties I
      * return in getDifficulties.
      */
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
     var difficulties:Array<String> = [];
 
-    //-----------------------------------------//
-    //       DON'T EDIT THIS FUNCTION IF       //
-    //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
-    //-----------------------------------------//
+    // TO story-diffs:
     /**
      * The list of difficulties the player can select from for this level.
      * @return The difficulty IDs.
      */
-    public override function getDifficulties():Array<String> {
+    function getDifficultiesFR(level:Level):Array<String> {
         // calibrates the difficulties array
         this.difficulties = [];
         // declare the song variable
         var song:Null<Song> = null;
         // iterate through the songs
         // included in the level
-        for (songId in _data.songs) {
+        for (songId in level.getSongs()) {
             // fetch the song object from the registry
             song = SongRegistry.instance.fetchEntry(songId);
             // if it doesn't exist,
@@ -239,10 +229,7 @@ class LevelName extends Level {
         // about that here.
     }
 
-    //-----------------------------------------//
-    //       DON'T EDIT THIS FUNCTION IF       //
-    //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
-    //-----------------------------------------//
+    // TO story-diffs:
     /**
      * uses the default difficulty list to sort the difficulties
      * (this list gets modified by the variation injector in order
@@ -257,67 +244,27 @@ class LevelName extends Level {
         return SortUtil.defaultsThenAlphabetically(Constants.DEFAULT_DIFFICULTY_LIST, a, b);
     }
 
-    //----------------------------------------//
-    //   IF YOU WANT TO HIDE SONG NAMES FORM  //
-    //     THE STORY MODE MENU, CHECK OUT     //
-    //     `getSongDisplayName`, NOT THIS     //
-    //----------------------------------------//
-    //----------------------------------------//
-    //       DON'T EDIT THIS FUNCTION IF      //
-    //    YOU DON'T KNOW WHAT YOU'RE DOING!   //
-    //----------------------------------------//
+    // TO story-diffs:
     /**
      * Get the list of songs in this level, as an array of names, for display on the menu.
      * @param difficulty The difficulty of the level being displayed
      * @return The display names of the songs in this level
      */
-    public override function getSongDisplayNames(difficulty:String):Array<String> {
-        // use the function normally, but force it
-        // to use the new getSongDisplayName we made,
-        // instead of the static one we can't override,
-        // and filter empty strings from the returned array.
-        var songList:Array<String> = getSongs();
-        if (songList == null) {songList = [];}
+    function getSongDisplayNamesFR(level:Level, difficulty:String):Array<String> {
+        var result:Array<String>  = level.getSongDisplayNames(difficulty);
+        var songList:Array<String> = level.getSongs();
+        if (songList == null) {return result;}
         var songNameList:Array<String> = songList.map(function(songId:String) {
-            return this.getSongDisplayName(songId, difficulty);
-        }).filter(function(songName:String) {return songName.length > 0;});
-        return songNameList;
-    }
-
-    //-----------------------------------------//
-    //       DON'T EDIT THIS FUNCTION IF       //
-    //    YOU DON'T KNOW WHAT YOU'RE DOING!    //
-    //   (except for the commented out part)   //
-    //-----------------------------------------//
-    public function getSongDisplayName(songId:String, difficulty:String):String {
-        // fetch the song from the registry
-        var song:Null<Song> = SongRegistry.instance.fetchEntry(songId);
-        // if it doesn't exist, return 'Unknown'
-        // (Like in the original implementation)
-        if (song == null) {return 'Unknown';}
-        // if (song.id == "blazin" && !{{condition}}) {return '';}
-        //          ^^^^^^^^^^^^
-        // THIS IS HOW YOU HIDE A SONG
-        // NAME FROM STORY MODE MENU 
-        // add more of these here:
-
-
-
-        // get the current variation metadata
-        // of this song according to the difficultiy
-        var variMeta = song._metadata.get(song.getFirstValidVariation(difficulty));
-        // if that variation metadata doesn't
-        // exist for the song, hide it.
-        if (variMeta == null) {return '';}
-        // return the song's display name
-        // according to the current variation metadata
-        return variMeta.songName;
-
-        // using this method, we can make the
-        // display name of the songs in the story
-        // mode menu change according to the variation
-        // associated with the current difficulty, while
-        // still giving level scripts control over which
-        // song names are displayed.
+            return Level.getSongDisplayName(songId, difficulty);
+        });
+        return result.map(function(songName:String) {
+            if (songName == 'Unknown') {return songName;}
+            var index = songNameList.indexOf(songName);
+            if (index != -1) {
+                var song = SongRegistry.instance.fetchEntry(songList[index]);
+                return song._metadata.get(song.getFirstValidVariation(difficulty)).songName;
+            }
+            return songName;
+        });
     }
 }

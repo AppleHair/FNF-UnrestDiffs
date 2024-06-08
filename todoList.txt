@@ -1,0 +1,15 @@
+Move variation injection fully to injector
+Remove the rest of the song script template (no more song script template)
+Make eggnog customizable
+Add "makeNew" array of difficulty groups to all song scripts and implement functionality
+Make alt level data get handled only in story diffs module
+Move level script's getDifficulties to story diffs and use it instead
+Same with getSongs, but make sure the playlist works all right
+Same with getSongDisplayNames, but make sure you recreate updateText for that again and detect the
+	default display names and just replace them with the current variation's song display names.
+Remove the rest of the level script template (no more level script template)
+Remove all the level scripts that I replaced
+Remove all the song scripts that I added and don't have anything to customize in them (except for winter-horrorland)
+Remove all the rest of the scripts that I replaced
+Edit the stress script to work with pico like before, and add an impl attribute that checks him.
+Fix percent not aligning correctly with the rest of the text in result screen
