@@ -1,5 +1,6 @@
 // TODO: Add more comments to this file
 import Array;
+import flixel.FlxG;
 import flixel.text.FlxText;
 import funkin.data.song.SongRegistry;
 import funkin.modding.module.Module;
@@ -51,22 +52,29 @@ class VariationInjector extends Module {
      */
     var finishedSetup:Bool = false;
 
+    /**
+     * Tries to injects a new variation into the song.
+     * @param variId the variation id to inject.
+     * @param songId the song id to inject the variation to.
+     */
     function injectVariationToSong(variId:String, songId:String):Void {
         var entry = SongRegistry.instance.fetchEntry(songId);
         if (entry == null) {return;}
         if (entry.variations.contains(variId)) {return;}
-        var songClassName:String = SongRegistry.instance.getScriptedEntryClassName(songId);
-        if (songClassName == null) {
-            trace('[vari-injector]  -  Failed to inject variations to song,'+
-                ' because it didn\'t have a scripted class ('+songId+' , '+variId+')');
+
+        // fetch the requested variation's
+        // metadata for the song
+        var variMeta = entry.fetchVariationMetadata(songId, variId);
+        // if it doesn't exist, the
+        // variation injection failed
+        if (variMeta == null) {
+            FlxG.log.warn('[vari-injector]  -  Failed to load variation metadata ('+songId+':'+variId+'), is the path correct?');
             return;
         }
-        if (entry.scriptCall('injectVariation', [variId])) {
-            trace('[vari-injector]  -  Successfully injected variation to song '+
-                '('+variId+' => '+songId+')');
-            return;
-        }
-        trace('[vari-injector]  -  Failed to inject variations to song ('+songClassName+' , '+variId+')');
+        // add the new variation
+        // metadata to the _metadata map
+        entry._metadata.set(variMeta.variation, variMeta);
+        trace('[vari-injector]  -  Successfully injected variation to song '+'('+variId+' => '+songId+')');
     }
 
     var forRemovalDiffVALI:Array<String>;

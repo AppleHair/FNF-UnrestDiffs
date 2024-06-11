@@ -1,11 +1,8 @@
-// UNRISTRICTED DIFFICULTIES' IMPORTS
-// DON'T REMOVE THESE IMPORTS!!!
+
 import flixel.FlxG;
-import funkin.data.song.SongMetadata;
 import funkin.play.song.Song;
-import funkin.play.song.SongDifficulty;
 import funkin.util.Constants;
-// SONG SPECIFIC IMPORTS:
+
 import flixel.FlxSprite;
 import flixel.util.FlxTimer;
 import funkin.audio.FunkinSound;
@@ -27,7 +24,6 @@ class ThornsSong extends Song {
     function new() {
         super("thorns");
     }
-    // SONG SPECIFIC FUNCTIONS/ATTRIBUTES:
 
     public override function onCountdownStart(event:CountdownScriptEvent):Void {
         super.onCountdownStart(event);
@@ -137,178 +133,5 @@ class ThornsSong extends Song {
     public override function onDialogueEnd() {
         // We may need to wait for the outro to play.
         Countdown.performCountdown();
-    }
-
-    // UNRISTRICTED DIFFICULTIES' FUNCTIONS:
-
-    //--------------------------------------//
-    //     DOT TOUCH `injectVariation`!!!   //
-    //--------------------------------------//
-    /**
-     * Tries to injects a new variation into the song.
-     * Returns true if the variation was successfully injected,
-     * and false if the variation failed to inject. Used by the
-     * variation injector when injecting new variations into the
-     * different songs according to the provided injection data
-     * files, while making sure the sorting is done correctly
-     * and the relationship between variations and difficulties
-     * is One-to-many.
-     * @param vari the variation id to inject.
-     * @return Bool
-     */
-    public function injectVariation(vari:String):Bool {
-        // fetch the requested variation's
-        // metadata for the song
-        var variMeta:Null<SongMetadata> = this.fetchVariationMetadata(this.id, vari);
-        // if it doesn't exist, the
-        // variation injection failed
-        if (variMeta == null) {
-            FlxG.log.warn('[SONG] Failed to load variation metadata ('+this.id+':'+vari+'), is the path correct?');
-            trace('[SONG]  FAILED to load variation: '+vari);
-            // false for failure
-            return false;
-        }
-        // add the new variation
-        // metadata to the _metadata map
-        this._metadata.set(variMeta.variation, variMeta);
-        trace('[SONG]  Loaded variation: '+vari);
-        // true for success
-        return true;
-    }
-
-    //---------------------------------------//
-    //    IF YOU EDIT `listDifficulties`,    //
-    //    IGNORE `variationIds` PARAMETER    //
-    //            AT ALL COSTS!!!            //
-    //---------------------------------------//
-    /**
-     * List all the difficulties in this song.
-     *
-     * @param variationId Optionally filter by a single variation.
-     * @param showLocked Include charts which are not unlocked
-     * @param showHidden Include charts which are not accessible to the player.
-     *
-     * @return The list of difficulties.
-     */
-    public override function listDifficulties(?variationId:String,
-        ?variationIds:Array<String>, showLocked:Bool = false,
-        showHidden:Bool = false):Array<String>
-    {
-        // uses the function normally, but while ignoring the 
-        // variationIds parameter, to prevent freeplay from
-        // filtering out variations. because variationId gets
-        // pushed into variationIds, we should pass an empty
-        // array to variationIds to allow variationId to
-        // filter the returned list.
-        return super.listDifficulties(variationId,variationId != null ? [] : this.variations,showLocked,showHidden);
-    }
-
-    //---------------------------------------//
-    //      IF YOU EDIT `getDifficulty`      //
-    //     IGNORE `variations` PARAMETER     //
-    //            AT ALL COSTS!!!            //
-    //---------------------------------------//
-    /**
-     * Retrieve the metadata for a specific difficulty, including the chart if it is loaded.
-     * @param diffId The difficulty ID, such as `easy` or `hard`.
-     * @param variation The variation ID to fetch the difficulty for.
-     * @return The difficulty data.
-     */
-    public override function getDifficulty(?diffId:String,
-        ?variation:String, ?variations:Array<String>):Null<SongDifficulty>
-    {
-        // if diffId is null, try to get the
-        // first difficulty available in the song,
-        // with priority to the provided variation
-        // if it was provided.
-        if (diffId == null && variation != null) {diffId = listDifficulties(variation)[0];}
-        if (diffId == null) {diffId = listDifficulties()[0];}
-        // if diffId is still null after this point, there
-        // are no difficulties in this song at all.
-        if (diffId == null) {return null;}
-
-        // Try to get the first valid variation to the
-        // difficulty and replace it with the provided
-        // variation if no variation was actually provided.
-        tryVariationId = this.getFirstValidVariation(diffId);
-        if (variation == null) {variation = tryVariationId;}
-        // If there's no first valid variation to the
-        // difficulty, the difficulty doesn't exist in the song.
-        if (tryVariationId == null) {return  null;}
-
-        // create the suffix for this difficulty in the difficulties map
-        var variationSuffix = (variation != Constants.DEFAULT_VARIATION) ? '-'+variation : '';
-
-        // if the difficulty exists in
-        // the difficulties map, return it
-        if (difficulties.exists(diffId+variationSuffix)) {
-            return difficulties.get(diffId+variationSuffix);
-        }
-        // otherwise, attempt to find the difficulty with
-        // the first valid variation, and only if that doesn't
-        // work, return null.
-        return (variation == tryVariationId ? null : this.getDifficulty(diffId));
-    }
-
-    //-------------------------------------------//
-    //   IF YOU EDIT `getFirstValidVariation`,   //
-    //   IGNORE `possibleVariations` PARAMETER   //
-    //              AT ALL COSTS!!!              //
-    //-------------------------------------------//
-    public override function getFirstValidVariation(?diffId:String,
-        ?possibleVariations:Array<String>):Null<String>
-    {
-	    // uses the function normally, but while
-        // ignoring the possibleVariations parameter,
-        // to prevent freeplay from filtering out variations
-        return super.getFirstValidVariation(diffId);
-    }
-
-    //---------------------------------------//
-    //      IF YOU EDIT `hasDifficulty`      //
-    //    IGNORE `variationIds` PARAMETER    //
-    //            AT ALL COSTS!!!            //
-    //---------------------------------------//
-    public override function hasDifficulty(diffId:String,
-        ?variationId:String, ?variationIds:Array<String>):Bool
-    {
-        // if diffId is null, try to get the
-        // first difficulty available in the song,
-        // with priority to the provided variation
-        // if it was provided.
-        if (diffId == null && variationId != null) {diffId = listDifficulties(variationId)[0];}
-        if (diffId == null) {diffId = listDifficulties()[0];}
-        // if diffId is still null after this point,
-        // there are no difficulties in this song at all.
-        if (diffId == null) {return false;}
-
-        // Try to get the first valid variation to the
-        // difficulty and replace it with the provided
-        // variation if no variation was actually provided.
-        tryVariationId = this.getFirstValidVariation(diffId);
-        if (variationId == null) {variationId = tryVariationId;}
-        // If there's no first valid variation to the
-        // difficulty, the difficulty doesn't exist in the song.
-        if (tryVariationId == null) {return false;}
-
-        // create the suffix for this difficulty in the difficulties map
-        var variationSuffix = (variationId != Constants.DEFAULT_VARIATION) ? '-'+variationId : '';
-
-        // if the difficulty exists in
-        // the difficulties map, return true
-        if (this.difficulties.exists(diffId+variationSuffix)) {
-            return true;
-        }
-        // otherwise, attempt to find the difficulty with
-        // the first valid variation, and only if that doesn't
-        // work, return false.
-        return (variationId == tryVariationId ? false : this.hasDifficulty(diffId));
-
-        // like getDifficulty, but returns a boolean for if the
-        // difficulty exists in the song or not. This function
-        // is currently (FNF 0.3.3) unused and deprecated by UD
-        // in favor of getDifficulty (checks for null), but it's
-        // still being maintained here in case it gets reused in
-        // a future update to FNF.
     }
 }
