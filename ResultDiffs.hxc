@@ -4,75 +4,62 @@ import funkin.Paths;
 import funkin.play.PlayState;
 import funkin.play.ResultState;
 import funkin.Preferences;
-import funkin.util.Constants;
 import openfl.utils.Assets;
 
 /**
- * When adding a new difficulty sprite to
- * the result screen, you need to add the
- * difficulty image to this path:
- * `shared/images/resultScreen/difficulties`
- * If you want to use a sparrow atlas, you
- * need to add the xml file with the same
- * name as the image file and in the same
- * folder and the prefix of the animation
- * must be named `idle`.
+ * result-diffs was originally created
+ * to let other mods add custom difficulty
+ * sprites to the result screen, but after
+ * the base game added support for custom
+ * difficulty sprites on update 0.4.0, this
+ * module is now only used for adding an idle
+ * animation to the difficulty sprite.
+ * 
+ * The difficulty sprite image and xml must be
+ * located in "shared/images/resultScreen". the
+ * name of the image and the xml should be the
+ * difficulty id with the prefix "diff_" and the
+ * name of the animation in the xml should be "idle".
  */
 class ResultDiffs extends Module {
 
-    function new()
-    {
-        super('result-diffs', 1);
+    function new() {
+        super('result-diffs');
     }
 
-    // Used for tracking result screen on update.
-    // PLEASE DON'T MODIFY THESE VARIABLES!!!
-    var justEnteredResultScreen:Bool = false;
-    var alreadyRanOnce:Bool = false;
-
-    public override function onSongEnd(event:ScriptEvent):Void {
-        this.alreadyRanOnce = false;
-    }
-
-    public override function onUpdate(event:UpdateScriptEvent):Void {
-        if (Std.isOfType(FlxG.state.subState, ResultState) && !this.justEnteredResultScreen && !this.alreadyRanOnce) {
-            this.justEnteredResultScreen = true;
-            //trace('ResultDiffs ON');
-            //trace(PlayState.instance.currentDifficulty);
-        } else if (this.justEnteredResultScreen) {
-            //trace('ResultDiffs OFF');
-            this.justEnteredResultScreen = false;
-        } else {return;}
-
-        if (!this.justEnteredResultScreen) {return;}
-
-        // WHEN THE RESULT SCREEN OPENS IN THE END OF A SONG:
-
-        // If the difficulty already has an result screen image in the base game, don't change it
-        if (Constants.DEFAULT_DIFFICULTY_LIST_FULL.contains(PlayState.instance.currentDifficulty)) {return;}
-
-        // get the previous height and width of the difficulty image
-        var prvHeight = FlxG.state.subState.difficulty.height;
-        var prvWidth = FlxG.state.subState.difficulty.width;
-
-        // build the path to the new difficulty image
-        var path = "resultScreen/difficulties/" + PlayState.instance.currentDifficulty;
-        // trace(path);
-
-        // if an xml exists, load the image as a sparrow atlas
+    /**
+     * This function gets added to the memberAdded
+     * signal of any ResultState that is opened as
+     * a substate. It will add the idle animation
+     * to the difficulty sprite if the animation exists.
+     * @param diffSprite A sprite that gets added to the result screen.
+     */
+    function addDifficultyAnimation(diffSprite) {
+        // We should check if this sprite is the difficulty
+        // sprite before we try to add the animation to it
+        if (diffSprite != FlxG.state.subState.difficulty) {return;}
+        // This should be the path to the difficulty sprite image and xml
+        // (from shared/images/ and without the file extension)
+        var path = "resultScreen/diff_" + PlayState.instance.currentDifficulty;
+        // if the xml exists, load the image as a sparrow atlas
         if (Assets.exists(Paths.file('shared/images/'+path+'.xml'))) {
             FlxG.state.subState.difficulty.frames = Paths.getSparrowAtlas(path);
+            // add the idle animation to the difficulty sprite and play it
             FlxG.state.subState.difficulty.animation.addByPrefix('idle', 'idle', 24, true);
             if (Preferences.flashingLights) {FlxG.state.subState.difficulty.animation.play('idle');}
-        // otherwise if an image exists, load the image as a normal image
-        } else if (Assets.exists(Paths.image(path))) {
-            FlxG.state.subState.difficulty.loadGraphic(Paths.image(path));
-        } // if the image doesn't exist, the default image will be used (resultScreen/difNormal.png)
+        }
+    }
 
-        // update positions to fit correctly after changing the image
-        FlxG.state.subState.difficulty.y += prvHeight - FlxG.state.subState.difficulty.height;
-        FlxG.state.subState.songName.x -= prvWidth - FlxG.state.subState.difficulty.width;
-
-        this.alreadyRanOnce = true;
+    /**
+     * when a substate is opened, we add the
+     * addDifficultyAnimation function to the
+     * memberAdded signal of the target state
+     * if it's a ResultState.
+     */
+    public override function onSubStateOpenBegin(event:SubStateScriptEvent):Void {
+        super.onSubStateOpenBegin(event);
+        if (Std.isOfType(event.targetState, ResultState)) {
+            event.targetState.memberAdded.add(this.addDifficultyAnimation);
+        }
     }
 }
