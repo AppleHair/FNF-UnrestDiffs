@@ -9,6 +9,7 @@ import funkin.graphics.adobeanimate.FlxAtlasSprite;
 import funkin.modding.base.ScriptedFlxAtlasSprite;
 import funkin.Paths;
 import funkin.play.PlayState;
+import funkin.play.PlayStatePlaylist;
 import funkin.save.Save;
 
 class EggnogSong extends Song {
@@ -42,14 +43,14 @@ class EggnogSong extends Song {
 	public override function onSongEnd(event:CountdownScriptEvent):Void {
 		super.onSongEnd(event);
 		
-		if (cutsceneOnlyInStoryMode && !PlayStatePlaylist.isStoryMode) hasPlayedCutscene = true;
-
-		if (PlayState.instance.currentVariation == 'erect' &&
-			(PlayStatePlaylist.isStoryMode || !beatenErectSong()))
-		{
-			hasPlayedCutscene = false;
+		if (cutsceneOnlyInStoryMode && !PlayStatePlaylist.isStoryMode && !hasPlayedCutscene) {
+			hasPlayedCutscene = true;
+			// only play this on erect if we are in story mode or haven't beaten the song before..
+			if (PlayState.instance.currentVariation == 'erect' && !beatenErectSong()) {
+				hasPlayedCutscene = false;
+			}
 		}
-		// only play this on erect if we are in story mode or haven't beaten the song before..
+		
 
         if (!hasPlayedCutscene) {
             hasPlayedCutscene = true;
@@ -95,8 +96,8 @@ class EggnogSong extends Song {
         PlayState.instance.currentStage.getDad().visible = false;
         var parentsShoot:ScriptedFlxAtlasSprite = ScriptedFlxAtlasSprite.init(dadShootsClassName, 0, 0);
 
-        parentsShoot.x = PlayState.instance.currentStage.getDad().x - 558;// 42 - 558 = -516
-		parentsShoot.y = PlayState.instance.currentStage.getDad().y - 379;// 882 - 379 = 503
+        parentsShoot.x = PlayState.instance.currentStage.getDad().x - 116;// -400 - 116 = -516
+		parentsShoot.y = PlayState.instance.currentStage.getDad().y + 403;// 100 + 403 = 503
 		parentsShoot.zIndex = santaDead.zIndex - 1;
 
         PlayState.instance.currentStage.add(parentsShoot);
@@ -161,7 +162,14 @@ class EggnogSong extends Song {
     {
         super.onCreate(event);
 
-        hasPlayedCutscene = false;
+		switch (PlayState.instance.currentVariation) {
+			case 'erect':
+				hasPlayedCutscene = false;
+			default:
+				hasPlayedCutscene = true;
+		}
+		// only play the cutscene on erect..
+
 		cutsceneOnlyInStoryMode = true;
 		santaEmotionSoundPath = 'santa_emotion';
 		santaDiesSoundPath = 'santa_shot_n_falls';
