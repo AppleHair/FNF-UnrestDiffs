@@ -13,30 +13,54 @@ import funkin.save.Save;
 
 class EggnogSong extends Song {
 
-    var hasPlayedCutscene:Bool = false;
-
-    //var santaDead:ScriptedFlxAtlasSprite;
+    public var hasPlayedCutscene:Bool = false;
+	public var cutsceneOnlyInStoryMode:Bool = true;
+	public var santaEmotionSoundPath:String = 'santa_emotion';
+	public var santaDiesSoundPath:String = 'santa_shot_n_falls';
+	public var dadShootsClassName:String = 'DadShootsSprite';
+	public var santaClassName:String = 'SantaDiesSprite';
+	public var hasSantaProp:Boolean = true;// Gets set to false if 'santa' doesn't exist in the stage
+	public var santaPos:Array<Float> = [-458, 498];
+	public var santaZIndexFromDad:Int = 10;
 
     function new() {
         super("eggnog");
     }
+	//var santaDead:ScriptedFlxAtlasSprite;
 
     public override function isSongNew(currentDifficulty:String):Bool {
 		if(currentDifficulty == 'erect' || currentDifficulty == 'nightmare') {
-			return !Save.instance.hasBeatenSong(this.id, ['erect', 'nightmare']);
+			return !beatenErectSong();
 		}
         return false;
 	}
 
+	function beatenErectSong():Bool {
+		return Save.instance.hasBeatenSong(this.id, ['erect', 'nightmare']);
+	}
+
 	public override function onSongEnd(event:CountdownScriptEvent):Void {
 		super.onSongEnd(event);
-    	if (PlayState.instance.currentVariation != 'erect') hasPlayedCutscene = true;
-		// only play this on erect..
+		
+		if (cutsceneOnlyInStoryMode && !PlayStatePlaylist.isStoryMode) hasPlayedCutscene = true;
+
+		if (PlayState.instance.currentVariation == 'erect' &&
+			(PlayStatePlaylist.isStoryMode || !beatenErectSong()))
+		{
+			hasPlayedCutscene = false;
+		}
+		// only play this on erect if we are in story mode or haven't beaten the song before..
 
         if (!hasPlayedCutscene) {
             hasPlayedCutscene = true;
 
             event.cancel();
+
+			// if the current stage doesn't have a santa,
+            // cancel the usage of the santa prop in this cutscene
+            if (PlayState.instance.currentStage.namedProps.get('santa') == null) {
+                hasSantaProp = false;
+            }
 
 		    // start the video cutscene and hide it so the other stuff can happen after
             startCutscene();
@@ -49,14 +73,19 @@ class EggnogSong extends Song {
 
 	function startCutscene() {
 
-        var normalSanta = PlayState.instance.currentStage.getNamedProp('santa');
-        normalSanta.visible = false;
+        var santaDead:ScriptedFlxAtlasSprite = ScriptedFlxAtlasSprite.init(santaClassName, 0, 0);
 
-        var santaDead:ScriptedFlxAtlasSprite = ScriptedFlxAtlasSprite.init('SantaDiesSprite', 0, 0);
+        santaDead.x = santaPos[0];
+		santaDead.y = santaPos[1];
+		santaDead.zIndex = PlayState.instance.currentStage.getDad().zIndex + santaZIndexFromDad - 1;
 
-        santaDead.x = -458;
-		santaDead.y = 498;
-		santaDead.zIndex = normalSanta.zIndex - 1;
+		if (hasSantaProp) {
+			var normalSanta = PlayState.instance.currentStage.getNamedProp('santa');
+			normalSanta.visible = false;
+			santaDead.x = normalSanta.x + 382;// -840 + 382 = -458
+			santaDead.y = normalSanta.y + 348;// 150 + 348 = 498
+			santaDead.zIndex = normalSanta.zIndex - 1;
+		}
 
         PlayState.instance.currentStage.add(santaDead);
 		PlayState.instance.currentStage.refresh(); // Apply z-index.
@@ -64,10 +93,10 @@ class EggnogSong extends Song {
         santaDead.scriptCall('playCutscene');
 
         PlayState.instance.currentStage.getDad().visible = false;
-        var parentsShoot:ScriptedFlxAtlasSprite = ScriptedFlxAtlasSprite.init('DadShootsSprite', 0, 0);
+        var parentsShoot:ScriptedFlxAtlasSprite = ScriptedFlxAtlasSprite.init(dadShootsClassName, 0, 0);
 
-        parentsShoot.x = -516;
-		parentsShoot.y = 503;
+        parentsShoot.x = PlayState.instance.currentStage.getDad().x - 558;// 42 - 558 = -516
+		parentsShoot.y = PlayState.instance.currentStage.getDad().y - 379;// 882 - 379 = 503
 		parentsShoot.zIndex = santaDead.zIndex - 1;
 
         PlayState.instance.currentStage.add(parentsShoot);
@@ -84,10 +113,9 @@ class EggnogSong extends Song {
 		PlayState.instance.currentStage.getDad().danceEvery = 0;
 
         PlayState.instance.tweenCameraToPosition(santaDead.x + 300, santaDead.y, 2.8, FlxEase.expoOut);
-		//PlayState.instance.tweenCameraToPosition(santaDead.x + 300, santaDead.y, 2.8, FlxEase.expoOut);
 		PlayState.instance.tweenCameraZoom(0.73, 2, true, FlxEase.quadInOut);
 
-		FunkinSound.playOnce(Paths.sound('santa_emotion'), 1);
+		FunkinSound.playOnce(Paths.sound(santaEmotionSoundPath), 1);
 
 		new FlxTimer().start(2.8, function(tmr)
 		{
@@ -103,7 +131,7 @@ class EggnogSong extends Song {
 		});
 		new FlxTimer().start(11.375, function(tmr)
 		{
-			FunkinSound.playOnce(Paths.sound('santa_shot_n_falls'), 1);
+			FunkinSound.playOnce(Paths.sound(santaDiesSoundPath), 1);
 		});
 
 		new FlxTimer().start(12.83, function(tmr)
@@ -134,5 +162,14 @@ class EggnogSong extends Song {
         super.onCreate(event);
 
         hasPlayedCutscene = false;
+		cutsceneOnlyInStoryMode = true;
+		santaEmotionSoundPath = 'santa_emotion';
+		santaDiesSoundPath = 'santa_shot_n_falls';
+		dadShootsClassName = 'DadShootsSprite';
+		santaClassName = 'SantaDiesSprite';
+		hasSantaProp = true;
+		santaPos[0] = -458;
+		santaPos[1] = 498;
+		santaZIndexFromDad = 10;
     }
 }
