@@ -1,9 +1,14 @@
 Make eggnog customizable
+Re-write variation injector to utlize polymod's append logic
+Re-write difficulty sorting to utlize polymod's append logic
 Try to seperate functionality from story-diffs and vari-injector into different modules
 Add more comments to the code
-Add the ability to make variation specific song scripts
-Seperate the customizable song scripts and the modules into two different mods
 Re-write mod descriptions and README
 
 future plans:
-Try to add the ability to make variation specific level scripts
+WRITE THE GUIDE
+Add the ability to make variation specific song scripts
+Add a simplified roses script that just changes the red fade beat if the variation is "erect"
+Move the customizable song scripts into a seperate mod
+Add the ability to make variation specific level scripts
+Add the new features to the guide
