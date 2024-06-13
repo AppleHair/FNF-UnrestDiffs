@@ -490,10 +490,13 @@ class StoryDiffs extends Module {
 
                     var targetVariation:String = targetSong.getFirstValidVariation(PlayStatePlaylist.campaignDifficulty);
 
+                    var targetInstId:String = targetSong.getDifficulty(PlayStatePlaylist.campaignDifficulty, targetVariation).characters.instrumental;
+
                     LoadingState.loadPlayState({
                         targetSong: targetSong,
                         targetDifficulty: PlayStatePlaylist.campaignDifficulty,
-                        targetVariation: targetVariation
+                        targetVariation: targetVariation,
+                        targetInstrumental: targetInstId
                     }, true);
                 };
                 this.dispatchEvent(new ScriptEvent(this.CONFIRMED));
