@@ -438,6 +438,16 @@ class StoryDiffs extends Module {
         this.finishedSetup = true;
     }
 
+    public override function onSongLoaded(event:SongLoadScriptEvent):Void {
+        super.onSongLoaded(event);
+
+        if (PlayState.instance == null) {return;}
+
+        PlayState.instance.currentInstrumental = PlayState.instance.
+            currentSong.getDifficulty(PlayState.instance.currentDifficulty,
+            PlayState.instance.currentVariation).characters.instrumental;
+    }
+
     public override function onCreate(event:ScriptEvent):Void {
         super.onCreate();
         setup();
@@ -490,13 +500,10 @@ class StoryDiffs extends Module {
 
                     var targetVariation:String = targetSong.getFirstValidVariation(PlayStatePlaylist.campaignDifficulty);
 
-                    var targetInstId:String = targetSong.getDifficulty(PlayStatePlaylist.campaignDifficulty, targetVariation).characters.instrumental;
-
                     LoadingState.loadPlayState({
                         targetSong: targetSong,
                         targetDifficulty: PlayStatePlaylist.campaignDifficulty,
-                        targetVariation: targetVariation,
-                        targetInstrumental: targetInstId
+                        targetVariation: targetVariation
                     }, true);
                 };
                 this.dispatchEvent(new ScriptEvent(this.CONFIRMED));
