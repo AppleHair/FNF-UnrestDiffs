@@ -13,7 +13,6 @@ import funkin.ui.AtlasText;
 import funkin.util.assets.DataAssets;
 import funkin.util.Constants;
 import funkin.util.tools.ArrayTools;
-import haxe.Json;
 import openfl.utils.Assets;
 import String;
 import StringTools;
@@ -31,7 +30,7 @@ class VariationInjector extends Module {
     }
 
     // PLEASE DON'T MODIFY THIS VARIABLE!!!
-    var VART_INJECT_PATH_PREFIX:String = "UD/injections/variations/";
+    var VART_INJECT_PATH_PREFIX:String = "UD/vari-injections/";
 
     // Difficulties and variations MUST have
     // a One-to-many relationship, meaning that
@@ -129,12 +128,12 @@ class VariationInjector extends Module {
         if (this.finishedSetup) {return;}
 
         // gets all the variation injection files.
-        var variIdList:Array<String> = DataAssets.listDataFilesInPath(VART_INJECT_PATH_PREFIX, '.json').map(
+        var variIdList:Array<String> = DataAssets.listDataFilesInPath(VART_INJECT_PATH_PREFIX, '.txt').map(
             function(variInjectPath:String):String {
                 return variInjectPath.split('/')[0];
             }
         );
-        // if a file is named "default.json", it will be ignored,
+        // if a file is named "default.txt", it will be ignored,
         // because you can't inject the default variation to a song,
         // it'll always be there.
         variIdList.remove("default");
@@ -143,23 +142,11 @@ class VariationInjector extends Module {
         // parse it and inject the variation to
         // each song that needs it.
         for (variId in variIdList) {
-            var path:String = Paths.json(VART_INJECT_PATH_PREFIX+variId);
-            var result = Json.parse(StringTools.trim(Assets.getText(path)));
-            var valid = Std.isOfType(result.songIds, Array);
-            if (!valid) {
-                PolymodErrorHandler.showAlert("Variation Injection Error",
-                    "Failed to parse variation injection file: "+variId+
-                    "\nsongIds value was not an array.");
-                continue;
-            }
-            variIdERRORCHECK = variId;
-            for (songId in result.songIds) {
-                var validSong = Std.isOfType(songId, String);
-                if (!validSong) {
-                    PolymodErrorHandler.showAlert("Variation Injection Error", "A song id wasn't a string in"+
-                        "\nvariation injection file: "+variIdERRORCHECK+"\nFailed to parse song id value: "+songId);
-                    break;
-                }
+            var path:String = Paths.txt(VART_INJECT_PATH_PREFIX+variId);
+            if (!Assets.exists(path)) {continue;}
+            for (songId in Assets.getText(path).split("\n").map(function(e:String):String {return StringTools.trim(e);})) {
+                if (songId == "") {continue;}
+                if (StringTools.startsWith(songId, "//")) {continue;}
                 this.injectVariationToSong(variId, songId);
             }
         }

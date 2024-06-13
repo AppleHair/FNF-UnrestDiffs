@@ -1,8 +1,8 @@
-Re-write variation injector to utlize polymod's append logic
-Re-write difficulty sorting to utlize polymod's append logic
 Try to seperate functionality from story-diffs and vari-injector into different modules
+Improve code I guess
 Add more comments to the code
 Re-write mod descriptions and README
+Write some basic instructions for specific features
 
 future plans:
 WRITE THE GUIDE

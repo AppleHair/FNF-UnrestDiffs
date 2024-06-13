@@ -5,10 +5,8 @@ import funkin.modding.PolymodErrorHandler;
 import funkin.Paths;
 import funkin.ui.freeplay.FreeplayState;
 import funkin.util.Constants;
-// import funkin.util.StructureUtil;
 import funkin.util.tools.ArrayTools;
 import haxe.ds.ArraySort;
-import haxe.Json;
 import Int;
 import openfl.utils.Assets;
 import StringTools;
@@ -18,13 +16,8 @@ class DiffSorter extends Module {
     function new() {
         super('diff-sorter', 1);
     }
-
-    // PLEASE DON'T MODIFY THESE VARIABLES!!!
-    var SORTING_PATH_PREFIX:String = "UD/sort/";
-    // for sorting a variation and its difficulties
-    var VARI_PREFIX_SORTP:String = "variations/";
-    // for sorting a difficulty independently
-    var DIFFS_PREFIX_SORTP:String = "difficulties/";
+    var VARI_DEF_PATH:String = "UD/variations";
+    var DIFF_DEF_PATH:String = "UD/difficulties";
 
     // PLEASE DON'T MODIFY THIS VARIABLE!!!
     var difficultySorting:Array<Array<String>> = [
@@ -46,20 +39,23 @@ class DiffSorter extends Module {
      var finishedSetup:Bool = false;
 
     function sortDifficulties(a:String, b:String):Int {
-        var numAv:Int = Std.parseInt(this.variationSorting[1][this.variationSorting[0].indexOf(
+        var numAv:Null<Int> = Std.parseInt(this.variationSorting[1][this.variationSorting[0].indexOf(
             this.difficultiesToVariations[1][this.difficultiesToVariations[0].indexOf(a)]
         )]);
-        var numBv:Int = Std.parseInt(this.variationSorting[1][this.variationSorting[0].indexOf(
+        var numBv:Null<Int> = Std.parseInt(this.variationSorting[1][this.variationSorting[0].indexOf(
             this.difficultiesToVariations[1][this.difficultiesToVariations[0].indexOf(b)]
         )]);
+        if (numAv == null || numBv == null) {return 0;}
         if (numAv < numBv) {
             return -1;
         }
         if (numAv > numBv) {
             return 1;
         }
-        var numAd:Int = Std.parseInt(this.difficultySorting[1][this.difficultySorting[0].indexOf(a)]);
-        var numBd:Int = Std.parseInt(this.difficultySorting[1][this.difficultySorting[0].indexOf(b)]);
+
+        var numAd:Null<Int> = Std.parseInt(this.difficultySorting[1][this.difficultySorting[0].indexOf(a)]);
+        var numBd:Null<Int> = Std.parseInt(this.difficultySorting[1][this.difficultySorting[0].indexOf(b)]);
+        if (numAd == null || numBd == null) {return 0;}
         if (numAd < numBd) {
             return -1;
         }
@@ -69,16 +65,13 @@ class DiffSorter extends Module {
         return 0;
     }
 
-    function checkForSortingData(path:String):Dynamic {
-        if (!Assets.exists(path)) {return null;}
-        var result = Json.parse(StringTools.trim(Assets.getText(path)));
-        if (!Std.isOfType(result.index, Int)) {
-            PolymodErrorHandler.showAlert("Difficulty Sorting Error",
-                "The difficulty sorting data at "+path+" is invalid."+
-                "\nthe index property must exist and be an integer.");
-            return null;
+    function checkForSortingData(path:String, callback:(res:Array<String>) -> Void):Void {
+        if (!Assets.exists(path)) {return;}
+        for (line in Assets.getText(path).split("\n")) {
+            if (line == "") {continue;}
+            if (StringTools.startsWith(line, "//")) {continue;}
+            callback(line.split(',').map(function(e:String):String {return StringTools.trim(e);}));
         }
-        return result;
     }
 
     function setup():Void {
@@ -100,47 +93,37 @@ class DiffSorter extends Module {
         allVariations.remove("default");
         allVariations.remove("erect");
 
-        for (variationId in allVariations) {
-            var path:String = Paths.json(SORTING_PATH_PREFIX+VARI_PREFIX_SORTP+variationId);
-            sortingData = checkForSortingData(path);
-            if (sortingData == null) {continue;}
-            this.variationSorting[0].push(variationId);
-            this.variationSorting[1].push(Std.string(sortingData.index));
-            // if (sortingData.difficultyIndices == null) {continue;}
-            // var diffIndexMap = StructureUtil.toMap(sortingData.difficultyIndices);
-            // for (difficultyId in diffIndexMap.keys()) {
-            //     if (this.difficultiesToVariations[1][this.difficultiesToVariations[0]
-            //         .indexOf(difficultyId)] != variationId)
-            //     {
-            //         PolymodErrorHandler.showAlert("Difficulty Sorting Error",
-            //             "The difficulty sorting data at "+path+" is invalid."+
-            //             "\nTried to sort a difficulty that doesn't belong to the variation.");
-            //         continue;
-            //     }
-            //     var index = diffIndexMap[difficultyId];
-            //     if (!Std.isOfType(index, Int)) {
-            //         PolymodErrorHandler.showAlert("Difficulty Sorting Error",
-            //             "The difficulty sorting data at "+path+" is invalid."+
-            //             "\nan index in the difficultyIndices map wasn't an integer.");
-            //         continue;
-            //     }
-            //     this.difficultySorting[0].push(difficultyId);
-            //     this.difficultySorting[1].push(Std.string(index));
-            // }
-        }
+        checkForSortingData(Paths.txt(VARI_DEF_PATH), function(res:Array<String>):Void {
+            if (res.length < 1) {return;}
+
+            // TODO: Remove this check after I change some 
+            // stuff in the code base and make sure it's safe.
+            if (!allVariations.contains(res[0])) {return;}
+
+            if (res.length < 2) {res.push('');}
+
+            this.variationSorting[0].push(res[0]);
+            this.variationSorting[1].push(res[1].split(".")[0]);
+        });
 
         var allDifficulties:Array<String> = this.difficultiesToVariations[0].copy();
         allDifficulties.filter(function(difficultyId:String):Bool {
             return !this.difficultySorting[0].contains(difficultyId);
         });
 
-        for (difficultyId in allDifficulties) {
-            var path:String = Paths.json(SORTING_PATH_PREFIX+DIFFS_PREFIX_SORTP+difficultyId);
-            sortingData = checkForSortingData(path);
-            if (sortingData == null) {continue;}
-            this.difficultySorting[0].push(difficultyId);
-            this.difficultySorting[1].push(Std.string(sortingData.index));
-        }
+        checkForSortingData(Paths.txt(DIFF_DEF_PATH), function(res:Array<String>):Void {
+            if (res.length < 2) {return;}
+
+            // TODO: Remove these checks after I change some 
+            // stuff in the code base and make sure it's safe.
+            if (!allDifficulties.contains(res[0])) {return;}
+            if (!this.difficultiesToVariations[1][this.difficultiesToVariations[0].indexOf(res[0])] == res[1]) {return;}
+
+            if (res.length < 3) {res.push('');}
+
+            this.difficultySorting[0].push(res[0]);
+            this.difficultySorting[1].push(res[2].split(".")[0]);
+        });
 
         Constants.DEFAULT_DIFFICULTY_LIST = this.difficultiesToVariations[0].copy();
         ArraySort.sort(Constants.DEFAULT_DIFFICULTY_LIST, sortDifficulties);

@@ -48,7 +48,7 @@ class StoryDiffs extends Module {
 
     // Used for defining the level alt data paths.
     // PLEASE DON'T MODIFY THESE VARIABLES!!!
-    var BASE_PREFIX_LADP:String = "UD/injections/levels-alt/";
+    var BASE_PREFIX_LADP:String = "UD/levels-alt/";
     var DIFFS_PREFIX_LADP:String = "difficulties/";
     var VARIS_PREFIX_LADP:String = "variations/";
 
