@@ -117,12 +117,6 @@ class VariationInjector extends Module {
             }
         }
     }
-    
-    // I have to declare it here because
-    // Hscript forgets it too quickly if I don't.
-    // Used for error handling on setup.
-    // PLEASE DON'T MODIFY THIS VARIABLE!!!
-    var variIdERRORCHECK:String = "";
 
     function setup():Void {
         if (this.finishedSetup) {return;}

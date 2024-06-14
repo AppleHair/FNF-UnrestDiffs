@@ -438,6 +438,8 @@ class StoryDiffs extends Module {
         this.finishedSetup = true;
     }
 
+
+    // fix for song instrumentals always being the default for story mode
     public override function onSongLoaded(event:SongLoadScriptEvent):Void {
         super.onSongLoaded(event);
 

@@ -1,4 +1,6 @@
-Try to seperate functionality from story-diffs and vari-injector into different modules
+Make a paths module to handle all the path constants
+Move difficulty trimming to a seperate modules
+Move level alt data handling to a seperate module, and keep level alt data loading in story-diffs
 Improve code I guess
 Add more comments to the code
 Re-write mod descriptions and README
