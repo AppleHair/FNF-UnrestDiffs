@@ -4,9 +4,10 @@ Go over level alt data loading code and make it more stable
 Add more comments to the code
 Re-write mod descriptions and README
 Write some basic instructions for specific features
-make a proper logo for the framework
+Make a proper logo for the framework
 
-future plans:
+Future Plans:
+
 WRITE THE GUIDE
 Add the ability to make variation specific song scripts
 Add a simplified roses script that just changes the red fade beat if the variation is "erect"
