@@ -1,0 +1,114 @@
+import flixel.text.FlxText;
+import funkin.modding.module.Module;
+import funkin.play.PauseSubState;
+import funkin.play.PlayState;
+import funkin.ui.AtlasText;
+import StringTools;
+
+class DiffNameTrim extends Module {
+    
+    function new() {
+        super("diff-name-trim", 0);
+    }
+
+    /**
+     * Converts a string to title case. For example, "hello world" becomes "Hello World".
+     *
+     * @param value The string to convert.
+     * @return The converted string.
+     */
+    function toTitleCase(value:String):String {
+        var words:Array<String> = value.split(' ');
+        var result:String = '';
+        for (i in 0...words.length) {
+            var word:String = words[i];
+            result += word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
+            if (i < words.length - 1) {
+                result += ' ';
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Strip a given prefix from a string.
+     * @param value The string to strip.
+     * @param prefix The prefix to strip. If the prefix isn't found, the original string is returned.
+     * @return The stripped string.
+     */
+    function stripPrefix(value:String, prefix:String):String {
+        if (StringTools.startsWith(value,prefix)) {
+            return value.substr(prefix.length);
+        }
+        return value;
+    }
+
+    function trimDifficultyName(diff:String, vari:String, ?title:Bool = true):String {
+        var result = stripPrefix(diff, vari);
+        if (diff.length <= vari.length) {result = diff;}
+        return title ? toTitleCase(result) : result;
+    }
+
+    function pauseMetadataDifficultyNameReplacer(entry:FlxText):Void {
+        if (PlayState.instance == null) {return;}
+        if (!StringTools.startsWith(entry.text,"Difficulty: ")) {return;}
+
+        entry.text = "Difficulty: "+this.trimDifficultyName(
+            PlayState.instance.currentDifficulty,
+            PlayState.instance.currentVariation
+        );
+    }
+
+    var pauseSubstate:PauseSubState = null;
+
+    function pauseDifficultyChangeListNameReplacer(entry:AtlasText):Void {
+        if (PlayState.instance == null) {return;}
+        if (this.pauseSubstate == null) {return;}
+        if (this.pauseSubstate.currentMenuEntries == null) {return;}
+
+        var entriesLen = this.pauseSubstate.currentMenuEntries.length;
+        if (this.pauseSubstate.currentMenuEntries[entriesLen-1].text != 'Back') {return;}
+
+        var diffList = PlayState.instance.currentSong.
+            listDifficulties(PlayState.instance.currentVariation, true);
+
+        var index = this.pauseSubstate.menuEntryText.group.members.indexOf(entry);
+        if (index == -1 || index >= diffList.length) {return;}
+
+        entry.text = this.trimDifficultyName(diffList[index],PlayState.instance.currentVariation,false);
+    }
+
+    function pauseDifficultyNameReplacer(maybeSomething):Void {
+        if (this.pauseSubstate == null) {return;}
+
+        if (this.pauseSubstate.metadata == maybeSomething) {
+            this.pauseSubstate.metadata.group.memberAdded.
+                add(this.pauseMetadataDifficultyNameReplacer);
+        }
+
+        if (this.pauseSubstate.menuEntryText != maybeSomething) {return;}
+
+        this.pauseSubstate.menuEntryText.group.memberAdded.
+            add(this.pauseDifficultyChangeListNameReplacer);
+    }
+
+    public override function onSubStateOpenBegin(event:SubStateScriptEvent):Void {
+        super.onSubStateOpenBegin(event);
+        if (Std.isOfType(event.targetState, PauseSubState)) {
+            this.pauseSubstate = event.targetState;
+            this.pauseSubstate.memberAdded.add(this.pauseDifficultyNameReplacer);
+        }
+    }
+
+    public override function onSongLoaded(event:SongLoadScriptEvent):Void {
+        if (PlayState.instance == null) {return;}
+        PlayState.instance.currentDifficulty = this.trimDifficultyName(
+            PlayState.instance.currentDifficulty,
+            PlayState.instance.currentVariation,
+            false
+        );
+        PlayState.instance.initDiscord();
+        PlayState.instance.currentDifficulty = event.difficulty;
+        super.onSongLoaded(event);
+    }
+}

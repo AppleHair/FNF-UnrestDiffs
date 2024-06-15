@@ -16,8 +16,6 @@ class DiffSorter extends Module {
     function new() {
         super('diff-sorter', 1);
     }
-    var VARI_DEF_PATH:String = "UD/variations";
-    var DIFF_DEF_PATH:String = "UD/difficulties";
 
     // PLEASE DON'T MODIFY THIS VARIABLE!!!
     var difficultySorting:Array<Array<String>> = [
@@ -77,6 +75,8 @@ class DiffSorter extends Module {
     function setup():Void {
         if (this.finishedSetup) {return;}
 
+        var UDPaths = ModuleHandler.getModule("ud-paths");
+
         // This is only used for reading
         // stuff and doesn't get modyfied.
         this.difficultiesToVariations = ModuleHandler.
@@ -93,7 +93,7 @@ class DiffSorter extends Module {
         allVariations.remove("default");
         allVariations.remove("erect");
 
-        checkForSortingData(Paths.txt(VARI_DEF_PATH), function(res:Array<String>):Void {
+        checkForSortingData(Paths.txt(UDPaths.scriptCall("definitions", [true])), function(res:Array<String>):Void {
             if (res.length < 1) {return;}
 
             // TODO: Remove this check after I change some 
@@ -111,7 +111,7 @@ class DiffSorter extends Module {
             return !this.difficultySorting[0].contains(difficultyId);
         });
 
-        checkForSortingData(Paths.txt(DIFF_DEF_PATH), function(res:Array<String>):Void {
+        checkForSortingData(Paths.txt(UDPaths.scriptCall("definitions", [false])), function(res:Array<String>):Void {
             if (res.length < 2) {return;}
 
             // TODO: Remove these checks after I change some 

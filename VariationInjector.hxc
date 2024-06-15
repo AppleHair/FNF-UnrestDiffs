@@ -1,15 +1,12 @@
 // TODO: Add more comments to this file
 import Array;
 import flixel.FlxG;
-import flixel.text.FlxText;
 import funkin.data.song.SongRegistry;
 import funkin.modding.module.Module;
+import funkin.modding.module.ModuleHandler;
 import funkin.modding.PolymodErrorHandler;
 import funkin.Paths;
-import funkin.play.PauseSubState;
-import funkin.play.PlayState;
 import funkin.play.song.Song;
-import funkin.ui.AtlasText;
 import funkin.util.assets.DataAssets;
 import funkin.util.Constants;
 import funkin.util.tools.ArrayTools;
@@ -24,13 +21,9 @@ import StringTools;
  */
 class VariationInjector extends Module {
 
-    function new()
-    {
+    function new() {
         super('vari-injector', 0);
     }
-
-    // PLEASE DON'T MODIFY THIS VARIABLE!!!
-    var VART_INJECT_PATH_PREFIX:String = "UD/vari-injections/";
 
     // Difficulties and variations MUST have
     // a One-to-many relationship, meaning that
@@ -121,12 +114,14 @@ class VariationInjector extends Module {
     function setup():Void {
         if (this.finishedSetup) {return;}
 
+        var UDPaths = ModuleHandler.getModule("ud-paths");
+
         // gets all the variation injection files.
-        var variIdList:Array<String> = DataAssets.listDataFilesInPath(VART_INJECT_PATH_PREFIX, '.txt').map(
-            function(variInjectPath:String):String {
-                return variInjectPath.split('/')[0];
-            }
-        );
+        var variIdList:Array<String> = DataAssets.listDataFilesInPath(
+            UDPaths.scriptCall("variationInjection"),'.txt'
+        ).map(function(variInjectPath:String):String {
+            return variInjectPath.split('/')[0];
+        });
         // if a file is named "default.txt", it will be ignored,
         // because you can't inject the default variation to a song,
         // it'll always be there.
@@ -136,7 +131,7 @@ class VariationInjector extends Module {
         // parse it and inject the variation to
         // each song that needs it.
         for (variId in variIdList) {
-            var path:String = Paths.txt(VART_INJECT_PATH_PREFIX+variId);
+            var path:String = Paths.txt(UDPaths.scriptCall("variationInjection", [variId]));
             if (!Assets.exists(path)) {continue;}
             for (songId in Assets.getText(path).split("\n").map(function(e:String):String {return StringTools.trim(e);})) {
                 if (songId == "") {continue;}
@@ -162,114 +157,5 @@ class VariationInjector extends Module {
     public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
         super.onStateChangeEnd();
         setup();
-    }
-
-    var capturedDiscordRPC:Bool = false;
-    var tmpDiff:String = "";
-
-    public override function onUpdate(event:UpdateScriptEvent):Void {
-        super.onUpdate();
-        if (PlayState.instance == null) {
-            capturedDiscordRPC = false;
-            return;
-        }
-        if (capturedDiscordRPC && !PlayState.instance.needsReset) {return;}
-
-        tmpDiff = PlayState.instance.currentDifficulty;
-        PlayState.instance.currentDifficulty = this.
-            trimDifficultyName(PlayState.instance.currentDifficulty,PlayState.instance.currentVariation,false);
-        PlayState.instance.initDiscord();
-        PlayState.instance.currentDifficulty = tmpDiff;
-
-        capturedDiscordRPC = true;
-    }
-
-    /**
-     * Converts a string to title case. For example, "hello world" becomes "Hello World".
-     *
-     * @param value The string to convert.
-     * @return The converted string.
-     */
-    function toTitleCase(value:String):String {
-        var words:Array<String> = value.split(' ');
-        var result:String = '';
-        for (i in 0...words.length) {
-            var word:String = words[i];
-            result += word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
-            if (i < words.length - 1) {
-                result += ' ';
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Strip a given prefix from a string.
-     * @param value The string to strip.
-     * @param prefix The prefix to strip. If the prefix isn't found, the original string is returned.
-     * @return The stripped string.
-     */
-    function stripPrefix(value:String, prefix:String):String {
-        if (StringTools.startsWith(value,prefix)) {
-            return value.substr(prefix.length);
-        }
-        return value;
-    }
-
-    function trimDifficultyName(diff:String, vari:String, ?title:Bool = true):String {
-        var result = stripPrefix(diff, vari);
-        if (diff.length <= vari.length) {result = diff;}
-        return title ? toTitleCase(result) : result;
-    }
-
-    function pauseMetadataDifficultyNameReplacer(entry:FlxText):Void {
-        if (PlayState.instance == null) {return;}
-        if (!StringTools.startsWith(entry.text,"Difficulty: ")) {return;}
-
-        entry.text = "Difficulty: "+this.trimDifficultyName(
-            PlayState.instance.currentDifficulty,
-            PlayState.instance.currentVariation
-        );
-    }
-
-    var pauseSubstate:PauseSubState = null;
-
-    function pauseDifficultyChangeListNameReplacer(entry:AtlasText):Void {
-        if (PlayState.instance == null) {return;}
-        if (this.pauseSubstate == null) {return;}
-        if (this.pauseSubstate.currentMenuEntries == null) {return;}
-
-        var entriesLen = this.pauseSubstate.currentMenuEntries.length;
-        if (this.pauseSubstate.currentMenuEntries[entriesLen-1].text != 'Back') {return;}
-
-        var diffList = PlayState.instance.currentSong.
-            listDifficulties(PlayState.instance.currentVariation, true);
-
-        var index = this.pauseSubstate.menuEntryText.group.members.indexOf(entry);
-        if (index == -1 || index >= diffList.length) {return;}
-
-        entry.text = this.trimDifficultyName(diffList[index],PlayState.instance.currentVariation,false);
-    }
-
-    function pauseDifficultyNameReplacer(maybeSomething):Void {
-        if (this.pauseSubstate == null) {return;}
-
-        if (this.pauseSubstate.metadata == maybeSomething) {
-            this.pauseSubstate.metadata.group.memberAdded.
-                add(this.pauseMetadataDifficultyNameReplacer);
-        }
-
-        if (this.pauseSubstate.menuEntryText != maybeSomething) {return;}
-
-        this.pauseSubstate.menuEntryText.group.memberAdded.
-            add(this.pauseDifficultyChangeListNameReplacer);
-    }
-
-    public override function onSubStateOpenBegin(event:SubStateScriptEvent):Void {
-        super.onSubStateOpenBegin(event);
-        if (Std.isOfType(event.targetState, PauseSubState)) {
-            this.pauseSubstate = event.targetState;
-            this.pauseSubstate.memberAdded.add(this.pauseDifficultyNameReplacer);
-        }
     }
 }

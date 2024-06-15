@@ -46,11 +46,8 @@ class StoryDiffs extends Module {
     var CONFIRMED:String = "UD_STORY_CONFIRM";
     var EXITED:String = "UD_STORY_EXIT";
 
-    // Used for defining the level alt data paths.
-    // PLEASE DON'T MODIFY THESE VARIABLES!!!
-    var BASE_PREFIX_LADP:String = "UD/levels-alt/";
-    var DIFFS_PREFIX_LADP:String = "difficulties/";
-    var VARIS_PREFIX_LADP:String = "variations/";
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    var UDPaths:Module = null;
 
     // Used for tracking level alt data.
     // PLEASE DON'T MODIFY THESE VARIABLES!!!
@@ -72,11 +69,6 @@ class StoryDiffs extends Module {
      * Used for tracking setup completion.
      */
     var finishedSetup:Bool = false;
-
-    function dispatchEvent(event:ScriptEvent):Void {
-        trace('[story-diffs]  -  Dispatching event ('+event.type+')');
-        ModuleHandler.callEvent(event);
-    }
 
     /**
      * Reloads the data of the level with new data,
@@ -179,12 +171,158 @@ class StoryDiffs extends Module {
         // song script's constructor.
     }
 
+    function addLevelAltDataForVariation(levelId:String, variationId:String, ?data:Dynamic):Void {
+        trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on variation ('+variationId+')');
+        var variDifficulties = [];
+        for (diffIndex in 0...difficultiesToVariations[1].length) {
+            if (difficultiesToVariations[1][diffIndex] == variationId &&
+                !this.levelAltData[0].contains(difficultiesToVariations[0][diffIndex]+levelId))
+            {
+                variDifficulties.push(difficultiesToVariations[0][diffIndex]);
+            }
+        }
+
+        if (variDifficulties.length == 0) {return;}
+
+        if (data == null) {
+            var path = Paths.json(UDPaths.scriptCall("levelAlt", [variationId, true, levelId]));
+            if (!Assets.exists(path)) {return;}
+            data = LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path);
+        }
+
+        for (diff in variDifficulties) {
+            this.addLevelAltDataForDifficulty(levelId, diff, data);
+        }
+
+        trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on variation ('+variationId+')');
+    }
+
+    function addLevelAltDataForDifficulty(levelId:String, difficultyId:String, ?data:Dynamic):Void {
+        trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
+        if (data == null) {
+            var path = Paths.json(UDPaths.scriptCall("levelAlt", [difficultyId, false, levelId]));
+            if (!Assets.exists(path)) {return;}
+            data = LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path);
+        }
+
+        this.considerAddingSongs(LevelRegistry.instance.fetchEntry(levelId), data.songs);
+
+        this.levelAltData[0].push(difficultyId+levelId);
+        this.levelAltData[1].push(data);
+
+        if (!this.hasAltData.contains(levelId)) {
+            this.hasAltData.push(levelId);
+        }
+        trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
+    }
+
+
+    function setup():Void {
+        if (this.finishedSetup) {return;}
+
+        this.UDPaths = ModuleHandler.getModule("ud-paths");
+
+        var levelIdList:Array<String> = [];
+
+        // This is only used for reading
+        // stuff and doesn't get modyfied.
+        this.difficultiesToVariations = ModuleHandler.
+            getModule("vari-injector").scriptGet("difficultiesToVariations");
+        
+        // Making alt level data for the
+        // default variation is not recommended.
+        // Please use the default level data instead.
+        var allVariations:Array<String> = [];
+        for (variationId in this.difficultiesToVariations[1]) {
+            if (!allVariations.contains(variationId)) {
+                allVariations.push(variationId);
+            }
+        }
+        allVariations.remove("default");
+
+        for (variationId in allVariations) {
+
+            levelIdList = DataAssets.listDataFilesInPath(UDPaths.scriptCall("levelAlt", [variationId, true]), '.json').map(
+                function(levelAltDataPath:String):String {
+                    return levelAltDataPath.split('/')[0];
+                }
+            );
+
+            for (levelId in levelIdList) {
+                this.addLevelAltDataForVariation(levelId, variationId);
+            }
+        }
+
+        var allDifficulties:Array<String> = this.difficultiesToVariations[0].copy();
+
+        for (difficultyId in allDifficulties) {
+
+            levelIdList = DataAssets.listDataFilesInPath(UDPaths.scriptCall("levelAlt", [difficultyId, false]), '.json').map(
+                function(levelAltDataPath:String):String {
+                    return levelAltDataPath.split('/')[0];
+                }
+            );
+
+            for (levelId in levelIdList) {
+                this.addLevelAltDataForDifficulty(levelId, difficultyId);
+            }
+        }
+
+        for (levelId in this.hasAltData) {
+            this.resetDataToDefault(LevelRegistry.instance.fetchEntry(levelId));
+        }
+
+        trace('[story-diffs]  -  Setup completed successfully');
+
+        this.finishedSetup = true;
+    }
+
+    public override function onCreate(event:ScriptEvent):Void {
+        super.onCreate(event);
+        setup();
+    }
+
+
+    public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
+        // trace('called onStateChangeEnd');
+        super.onStateChangeEnd(event);
+        if (Std.isOfType(event.targetState, StoryMenuState)) {
+            this.storyMenu = event.targetState;
+            this.justEnteredStoryMenu = true;
+            this.storyMenu.persistentUpdate = true;
+            // trace('StoryDiffs ON');
+            // trace(this.lastRememberedDifficulty);
+            // trace(this.lastDifficultyList);
+        } else if (this.storyMenu != null) {
+            this.storyMenu = null;
+            // trace('StoryDiffs OFF');
+            // trace(this.lastRememberedDifficulty);
+            // trace(this.lastDifficultyList);
+        }
+        setup();
+    }
+
+    // fix for song instrumentals always being the default for story mode
+    public override function onSongLoaded(event:SongLoadScriptEvent):Void {
+        super.onSongLoaded(event);
+
+        if (PlayState.instance == null) {return;}
+
+        PlayState.instance.currentInstrumental = PlayState.instance.
+            currentSong.getDifficulty(PlayState.instance.currentDifficulty,
+            PlayState.instance.currentVariation).characters.instrumental;
+    }
+
+    function dispatchEvent(event:ScriptEvent):Void {
+        trace('[story-diffs]  -  Dispatching event ('+event.type+')');
+        ModuleHandler.callEvent(event);
+    }
 
     /**
      * Get the list of songs in this level, as an array of IDs.
      * @return Array<String>
      */
-    function getSongsFR(level:Level, difficulty:String):Array<String> {
+     function getSongsFR(level:Level, difficulty:String):Array<String> {
         // gets the songs normally
         var songs = level.getSongs();
         if (songs == null) {return null;}
@@ -208,24 +346,15 @@ class StoryDiffs extends Module {
         // back to the main menu.
     }
 
-
-    
-    // I have to declare it here because
-    // Hscript forgets it too quickly if I don't.
-    // PLEASE DON'T MODIFY THIS VARIABLE!!!
-    /**
-     * I'm using this array to track the difficulties I
-     * return in getDifficultiesFR.
-     */
-    var difficultiesFR:Array<String> = [];
-
     /**
      * The list of difficulties the player can select from for this level.
      * @return The difficulty IDs.
      */
-    function getDifficultiesFR(level:Level):Array<String> {
+    function getDifficultiesFR(level:Level, difficulties:Array<String> = []):Array<String> {
         // calibrates the difficulties array
-        this.difficultiesFR = [];
+        while (difficulties.length > 0) {
+            difficulties.pop();
+        }
         // declare the song variable
         var song = null;
         // iterate through the songs
@@ -244,14 +373,14 @@ class StoryDiffs extends Module {
                 // push the difficulty to the
                 // difficulties array if it's not
                 // already there
-                ArrayTools.pushUnique(this.difficultiesFR, diff);
+                if (!difficulties.contains(diff)) {difficulties.push(diff);}
             }
         }
         // sort the difficulties array
-        this.difficultiesFR.sort(this.sortingStoryDiffs);
+        difficulties.sort(this.sortingStoryDiffs);
         // return the final 
         // sorted difficulties array
-        return this.difficultiesFR;
+        return difficulties;
 
         // Using this method, we can display
         // the maximum amount of difficulties
@@ -276,25 +405,21 @@ class StoryDiffs extends Module {
         return SortUtil.defaultsThenAlphabetically(Constants.DEFAULT_DIFFICULTY_LIST, a, b);
     }
 
-
-    var resultSongDisplay:Array<String> = [];
-
     /**
      * Get the list of songs in this level, as an array of names, for display on the menu.
      * @param difficulty The difficulty of the level being displayed
      * @return The display names of the songs in this level
      */
-    function getSongDisplayNamesFR(level:Level, difficulty:String):Array<String> {
-        resultSongDisplay = level.getSongDisplayNames(difficulty);
-        trace(resultSongDisplay);
+    function getSongDisplayNamesFR(level:Level, difficulty:String, ?displayNames:Array<String>):Array<String> {
+        if (displayNames == null) {
+            displayNames = level.getSongDisplayNames(difficulty);
+        }
         var songList:Array<String> = level.getSongs();
-        trace(songList);
-        if (songList == null) {return resultSongDisplay;}
+        if (songList == null) {return displayNames;}
         var songNameList:Array<String> = songList.map(function(songId:String) {
             return Level.getSongDisplayName(songId, difficulty);
         });
-        trace(songNameList);
-        return resultSongDisplay.map(function(songName:String) {
+        return displayNames.map(function(songName:String) {
             if (songName == 'Unknown') {return songName;}
             var index = songNameList.indexOf(songName);
             if (index != -1) {
@@ -325,154 +450,6 @@ class StoryDiffs extends Module {
             return;
         }
         this.storyMenu.highScore = levelScore.score;
-    }
-
-
-    var difficultiesAltDataVari:Array<String> = [];
-    var levelAltDataVari:Dynamic = null;
-
-    function addLevelAltDataForVariation(levelId:String, variationId:String):Void {
-        trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on variation ('+variationId+')');
-        var path = Paths.json(BASE_PREFIX_LADP+VARIS_PREFIX_LADP+variationId+"/"+levelId);
-        if (!Assets.exists(path)) {return;}
-        difficultiesAltDataVari = [];
-        for (diffIndex in 0...difficultiesToVariations[1].length) {
-            if (difficultiesToVariations[1][diffIndex] == variationId &&
-                !this.levelAltData[0].contains(difficultiesToVariations[0][diffIndex]+levelId))
-            {
-                difficultiesAltDataVari.push(difficultiesToVariations[0][diffIndex]);
-            }
-        }
-        if (difficultiesAltDataVari.length == 0) {return;}
-
-        levelAltDataVari = LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path);
-
-        this.considerAddingSongs(LevelRegistry.instance.fetchEntry(levelId), levelAltDataVari.songs);
-
-        for (diff in difficultiesAltDataVari) {
-            this.levelAltData[0].push(diff+levelId);
-            this.levelAltData[1].push(levelAltDataVari);
-        }
-
-        if (!this.hasAltData.contains(levelId)) {
-            this.hasAltData.push(levelId);
-        }
-
-        trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on variation ('+variationId+')');
-    }
-
-    function addLevelAltDataForDifficulty(levelId:String, difficultyId:String):Void {
-        trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
-        var path = Paths.json(BASE_PREFIX_LADP+DIFFS_PREFIX_LADP+difficultyId+"/"+levelId);
-        if (!Assets.exists(path)) {return;}
-
-        var levelData:Dynamic = LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path);
-
-        this.considerAddingSongs(LevelRegistry.instance.fetchEntry(levelId), levelData.songs);
-
-        this.levelAltData[0].push(difficultyId+levelId);
-        this.levelAltData[1].push(levelData);
-
-        if (!this.hasAltData.contains(levelId)) {
-            this.hasAltData.push(levelId);
-        }
-        trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
-    }
-
-
-    function setup():Void {
-        if (this.finishedSetup) {return;}
-
-        var levelIdList:Array<String> = [];
-
-        // This is only used for reading
-        // stuff and doesn't get modyfied.
-        this.difficultiesToVariations = ModuleHandler.
-            getModule("vari-injector").scriptGet("difficultiesToVariations");
-        
-        // Making alt level data for the
-        // default variation is not recommended.
-        // Please use the default level data instead.
-        var allVariations:Array<String> = [];
-        for (variationId in this.difficultiesToVariations[1]) {
-            if (!allVariations.contains(variationId)) {
-                allVariations.push(variationId);
-            }
-        }
-        allVariations.remove("default");
-
-        for (variationId in allVariations) {
-
-            levelIdList = DataAssets.listDataFilesInPath(BASE_PREFIX_LADP+VARIS_PREFIX_LADP+variationId+"/", '.json').map(
-                function(levelAltDataPath:String):String {
-                    return levelAltDataPath.split('/')[0];
-                }
-            );
-
-            for (levelId in levelIdList) {
-                this.addLevelAltDataForVariation(levelId, variationId);
-            }
-        }
-
-        var allDifficulties:Array<String> = this.difficultiesToVariations[0].copy();
-
-        for (difficultyId in allDifficulties) {
-
-            levelIdList = DataAssets.listDataFilesInPath(BASE_PREFIX_LADP+DIFFS_PREFIX_LADP+difficultyId+"/", '.json').map(
-                function(levelAltDataPath:String):String {
-                    return levelAltDataPath.split('/')[0];
-                }
-            );
-
-            for (levelId in levelIdList) {
-                this.addLevelAltDataForDifficulty(levelId, difficultyId);
-            }
-        }
-
-        for (levelId in this.hasAltData) {
-            this.resetDataToDefault(LevelRegistry.instance.fetchEntry(levelId));
-        }
-
-        trace('[story-diffs]  -  Setup completed successfully');
-
-        this.finishedSetup = true;
-    }
-
-
-    // fix for song instrumentals always being the default for story mode
-    public override function onSongLoaded(event:SongLoadScriptEvent):Void {
-        super.onSongLoaded(event);
-
-        if (PlayState.instance == null) {return;}
-
-        PlayState.instance.currentInstrumental = PlayState.instance.
-            currentSong.getDifficulty(PlayState.instance.currentDifficulty,
-            PlayState.instance.currentVariation).characters.instrumental;
-    }
-
-    public override function onCreate(event:ScriptEvent):Void {
-        super.onCreate();
-        setup();
-    }
-
-
-    public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
-        // trace('called onStateChangeEnd');
-        super.onStateChangeEnd();
-        if (Std.isOfType(event.targetState, StoryMenuState)) {
-            this.storyMenu = event.targetState;
-            this.justEnteredStoryMenu = true;
-            this.storyMenu.persistentUpdate = true;
-            // trace('StoryDiffs ON');
-            // trace(this.lastRememberedDifficulty);
-            // trace(this.lastDifficultyList);
-        } else if (this.storyMenu != null) {
-            this.storyMenu = null;
-            // trace('StoryDiffs OFF');
-            // trace(this.lastRememberedDifficulty);
-            // trace(this.lastDifficultyList);
-        }
-        setup();
     }
 
     public override function onUpdate(event:UpdateScriptEvent):Void {

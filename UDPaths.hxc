@@ -1,0 +1,31 @@
+import funkin.modding.module.Module;
+
+class UDPaths extends Module {
+    function new() {
+        super("ud-paths", 0);
+    }
+
+    var BASE_UD_PATH:String = "UD/";
+
+    var LEVELS_ALT_PREFIX:String = "levels-alt/";
+
+    var VART_INJECT_PREFIX:String = "vari-injections/";
+
+    public function variationInjection(variId:String = '') {
+        return BASE_UD_PATH+VART_INJECT_PREFIX+variId;
+    }
+
+    public function definitions(variations:Bool = false) {
+        if (variations) {
+            return BASE_UD_PATH+"variations";
+        }
+        return BASE_UD_PATH+"difficulties";
+    }
+
+    public function levelAlt(folderId:String, variations:Bool = false, levelId:String = '') {
+        if (variations) {
+            return BASE_UD_PATH+LEVELS_ALT_PREFIX+"variations/"+folderId+"/"+levelId;
+        }
+        return BASE_UD_PATH+LEVELS_ALT_PREFIX+"difficulties/"+folderId+"/"+levelId;
+    }
+}

@@ -1,10 +1,10 @@
-Make a paths module to handle all the path constants
-Move difficulty trimming to a seperate modules
+Change diff-sorter to diff-definer, move difficulty validation to it from vari-injector and make its functionality replace difficultiesToVariations
 Move level alt data handling to a seperate module, and keep level alt data loading in story-diffs
-Improve code I guess
+Go over level alt data loading code and make it more stable
 Add more comments to the code
 Re-write mod descriptions and README
 Write some basic instructions for specific features
+make a proper logo for the framework
 
 future plans:
 WRITE THE GUIDE
