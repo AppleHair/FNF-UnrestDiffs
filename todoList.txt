@@ -1,4 +1,3 @@
-Change diff-sorter to diff-definer, move difficulty validation to it from vari-injector and make its functionality replace difficultiesToVariations
 Move level alt data handling to a seperate module, and keep level alt data loading in story-diffs
 Go over level alt data loading code and make it more stable
 Add more comments to the code
