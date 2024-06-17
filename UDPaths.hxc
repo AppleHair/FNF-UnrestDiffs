@@ -2,7 +2,7 @@ import funkin.modding.module.Module;
 
 class UDPaths extends Module {
     function new() {
-        super("ud-paths", 0);
+        super("ud-paths", -1);
     }
 
     var BASE_UD_PATH:String = "UD/";

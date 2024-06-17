@@ -34,7 +34,7 @@ import StringTools;
 class StoryDiffs extends Module {
 
     function new() {
-        super('story-diffs', 1);
+        super('story-diffs', 2);
         if (StoryMenuState.rememberedLevelId != null) {
             this.lastRememberedLevelId = StoryMenuState.rememberedLevelId;
         }
@@ -51,7 +51,6 @@ class StoryDiffs extends Module {
 
     // Used for tracking level alt data.
     // PLEASE DON'T MODIFY THESE VARIABLES!!!
-    var difficultiesToVariations:Array<Array<String>> = [[],[]];
     var defaultLevelDatas:Array<Array<Dynamic>> = [[],[]];
     var levelAltData:Array<Array<Dynamic>> = [[],[]];
     var hasAltData:Array<String> = [];
@@ -173,14 +172,12 @@ class StoryDiffs extends Module {
 
     function addLevelAltDataForVariation(levelId:String, variationId:String, ?data:Dynamic):Void {
         trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on variation ('+variationId+')');
-        var variDifficulties = [];
-        for (diffIndex in 0...difficultiesToVariations[1].length) {
-            if (difficultiesToVariations[1][diffIndex] == variationId &&
-                !this.levelAltData[0].contains(difficultiesToVariations[0][diffIndex]+levelId))
-            {
-                variDifficulties.push(difficultiesToVariations[0][diffIndex]);
-            }
-        }
+        var variIndex = ModuleHandler.getModule("diff-definer").scriptGet("variationDefs")[0].indexOf(variationId);
+        if (variIndex == -1) {return;}
+        var variDifficulties:Array<String> = ModuleHandler.getModule("diff-definer").
+        scriptGet("diffIndicesByVari")[variIndex].map(function(diffIndex:Int):String {
+            return ModuleHandler.getModule("diff-definer").scriptGet("difficultyDefs")[0][diffIndex];
+        });
 
         if (variDifficulties.length == 0) {return;}
 
@@ -223,21 +220,12 @@ class StoryDiffs extends Module {
         this.UDPaths = ModuleHandler.getModule("ud-paths");
 
         var levelIdList:Array<String> = [];
-
-        // This is only used for reading
-        // stuff and doesn't get modyfied.
-        this.difficultiesToVariations = ModuleHandler.
-            getModule("vari-injector").scriptGet("difficultiesToVariations");
         
         // Making alt level data for the
         // default variation is not recommended.
         // Please use the default level data instead.
-        var allVariations:Array<String> = [];
-        for (variationId in this.difficultiesToVariations[1]) {
-            if (!allVariations.contains(variationId)) {
-                allVariations.push(variationId);
-            }
-        }
+        var allVariations:Array<String> = ModuleHandler.
+            getModule("diff-definer").scriptGet("variationDefs")[0].copy();
         allVariations.remove("default");
 
         for (variationId in allVariations) {
@@ -253,7 +241,8 @@ class StoryDiffs extends Module {
             }
         }
 
-        var allDifficulties:Array<String> = this.difficultiesToVariations[0].copy();
+        var allDifficulties:Array<String> = ModuleHandler.
+            getModule("diff-definer").scriptGet("difficultyDefs")[0].copy();
 
         for (difficultyId in allDifficulties) {
 

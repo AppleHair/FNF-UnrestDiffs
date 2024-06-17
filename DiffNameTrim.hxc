@@ -8,7 +8,7 @@ import StringTools;
 class DiffNameTrim extends Module {
     
     function new() {
-        super("diff-name-trim", 0);
+        super("diff-name-trim");
     }
 
     /**

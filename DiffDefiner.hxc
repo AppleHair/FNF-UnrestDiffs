@@ -1,0 +1,202 @@
+// TODO: Add more comments to this file
+import funkin.modding.module.Module;
+import funkin.modding.module.ModuleHandler;
+import funkin.modding.PolymodErrorHandler;
+import funkin.Paths;
+import funkin.ui.freeplay.FreeplayState;
+import funkin.data.song.SongRegistry;
+import funkin.play.song.Song;
+import funkin.util.Constants;
+import funkin.util.tools.ArrayTools;
+import haxe.ds.ArraySort;
+import Int;
+import openfl.utils.Assets;
+import StringTools;
+
+class DiffDefiner extends Module {
+
+    function new() {
+        super('diff-definer', 1);
+    }
+
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    var difficultyDefs:Array<Array<String>> = [
+        ["easy","normal","hard","erect","nightmare"],
+        ["1","3","5","1","3"]
+    ];
+    var variIndexByDiff:Array<Int> = [0,0,0,1,1];
+
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    var variationDefs:Array<Array<String>> = [
+        ["default","erect"],
+        ["1","3"]
+    ];
+    var diffIndicesByVari:Array<Array<Int>> = [[0,1,2],[3,4]];
+
+    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    /**
+     * Used for tracking setup completion.
+     */
+    var finishedSetup:Bool = false;
+
+    function sortDifficulties(a:String, b:String):Int {
+        var numAv:Null<Int> = Std.parseInt(this.variationDefs[1][this.variIndexByDiff[this.difficultyDefs[0].indexOf(a)]]);
+        var numBv:Null<Int> = Std.parseInt(this.variationDefs[1][this.variIndexByDiff[this.difficultyDefs[0].indexOf(b)]]);
+        if (numAv == null || numBv == null) {return 0;}
+        if (numAv < numBv) {
+            return -1;
+        }
+        if (numAv > numBv) {
+            return 1;
+        }
+
+        var numAd:Null<Int> = Std.parseInt(this.difficultyDefs[1][this.difficultyDefs[0].indexOf(a)]);
+        var numBd:Null<Int> = Std.parseInt(this.difficultyDefs[1][this.difficultyDefs[0].indexOf(b)]);
+        if (numAd == null || numBd == null) {return 0;}
+        if (numAd < numBd) {
+            return -1;
+        }
+        if (numAd > numBd) {
+            return 1;
+        }
+        return 0;
+    }
+
+    function checkForDefinitionData(path:String, callback:(res:Array<String>) -> Void):Void {
+        if (!Assets.exists(path)) {return;}
+        for (line in Assets.getText(path).split("\n")) {
+            if (line == "") {continue;}
+            if (StringTools.startsWith(line, "//")) {continue;}
+            callback(line.split(',').map(function(e:String):String {return StringTools.trim(e);}));
+        }
+    }
+
+    function defineVariation(variId:String, priority:String):Void {
+        if (this.variationDefs[0].contains(variId)) {return;}
+        this.variationDefs[0].push(variId);
+        this.variationDefs[1].push(priority.split(".")[0]);
+        this.diffIndicesByVari.push([]);
+    }
+
+    function defineDifficulty(diffId:String, variId:String, priority:String):Void {
+        if (this.difficultyDefs[0].contains(diffId)) {return;}
+        var variIndex:Int = this.variationDefs[0].indexOf(variId);
+        if (variIndex == -1) {return;}
+
+        this.difficultyDefs[0].push(diffId);
+        this.difficultyDefs[1].push(priority.split(".")[0]);
+        this.diffIndicesByVari[variIndex].push(this.difficultyDefs[0].length-1);
+        this.variIndexByDiff.push(variIndex);
+    }
+
+    // Difficulties and variations MUST have
+    // a One-to-many relationship, meaning that
+    // a variation can have many difficulties,
+    // but a difficulty can have ONE variation.
+    // This rule applies to all difficulties, except
+    // for hidden ones (like "picospeaker") which exist
+    // only in the chart files, and are not shown in game
+    var forRemovalDiffVALI:Array<String>;
+    var forRemovalVariVALI:Array<String>;
+    var songVALI:Song;
+    function validateDifficulties():Void {
+        for (songId in SongRegistry.instance.listBaseGameSongIds().concat(SongRegistry.instance.listModdedSongIds())) {
+            songVALI = SongRegistry.instance.fetchEntry(songId);
+            songVALI.difficulties.clear();
+            songVALI.populateDifficulties();
+            forRemovalVariVALI = [];
+            for (vari in songVALI.variations) {
+                forRemovalDiffVALI = [];
+                for (diff in songVALI._metadata.get(vari).playData.difficulties) {
+                    if (difficultyDefs[0].contains(diff)) {
+                        if (variationDefs[0][this.variIndexByDiff[this.difficultyDefs[0].indexOf(diff)]] != vari) {
+                            var realVari:String = variationDefs[0][this.variIndexByDiff[this.difficultyDefs[0].indexOf(diff)]];
+                            PolymodErrorHandler.showAlert("Variation-Difficulty Relationship Error", "Tried to add"+
+                                " a difficulty ("+diff+") to a variation ("+vari+"), but the difficulty already had"+
+                                " a different variation assigned to it ("+realVari+") (on song: "+songVALI.id+").");
+                            forRemovalDiffVALI.push(diff);
+                        }
+                        continue;
+                    }
+                    defineVariation(vari, '');
+                    defineDifficulty(diff, vari, '');
+                }
+                for (diff in forRemovalDiffVALI) {
+                    songVALI._metadata.get(vari).playData.difficulties.remove(diff);
+                    var variationSuffix:String = (vari != Constants.DEFAULT_VARIATION) ? '-'+vari : '';
+                    songVALI.difficulties.remove(diff+variationSuffix);
+                }
+                if (songVALI._metadata.get(vari).playData.difficulties.length == 0) {
+                    forRemovalVariVALI.push(vari);
+                }
+            }
+            for (vari in forRemovalVariVALI) {
+                songVALI.variations.remove(vari);
+                songVALI._metadata.remove(vari);
+            }
+        }
+        songVALI = null;
+        forRemovalDiffVALI = null;
+        forRemovalVariVALI = null;
+    }
+
+    function setup():Void {
+        if (this.finishedSetup) {return;}
+
+        var UDPaths = ModuleHandler.getModule("ud-paths");
+
+        // VARIATIONS
+        checkForDefinitionData(Paths.txt(
+        UDPaths.scriptCall("definitions", [true])),
+        function(res:Array<String>):Void {
+            if (res.length < 1) {return;}
+            if (res.length < 2) {res.push('');}
+            defineVariation(res[0], res[1]);
+        });
+
+        // DIFFICULTIES
+        checkForDefinitionData(Paths.txt(
+        UDPaths.scriptCall("definitions", [false])),
+        function(res:Array<String>):Void {
+            if (res.length < 2) {return;}
+            if (res.length < 3) {res.push('');}
+            defineDifficulty(res[0], res[1], res[2]);
+        });
+
+        validateDifficulties();
+
+        Constants.DEFAULT_DIFFICULTY_LIST = this.difficultyDefs[0].copy();
+        ArraySort.sort(Constants.DEFAULT_DIFFICULTY_LIST, sortDifficulties);
+
+        trace('[diff-sorter]  -  Finished Defining Difficulties and Variations!');
+
+        this.finishedSetup = true;
+    }
+
+    public override function onCreate(event:ScriptEvent):Void {
+        super.onCreate();
+        setup();
+    }
+
+    public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
+        super.onStateChangeEnd();
+        setup();
+    }
+
+    var freeplayState:FreeplayState = null;
+
+    public override function onSubStateOpenEnd(event:SubStateScriptEvent):Void {
+        super.onSubStateOpenEnd();
+        if (Std.isOfType(event.targetState, FreeplayState)) {
+            freeplayState = event.targetState;
+        }
+    }
+
+    public override function onUpdate(event:UpdateScriptEvent):Void {
+        super.onUpdate();
+        if (freeplayState != null) {
+            ArraySort.sort(freeplayState.diffIdsTotal,sortDifficulties);
+            freeplayState = null;
+        }
+    }
+}

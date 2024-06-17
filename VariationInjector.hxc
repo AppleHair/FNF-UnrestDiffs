@@ -25,19 +25,6 @@ class VariationInjector extends Module {
         super('vari-injector', 0);
     }
 
-    // Difficulties and variations MUST have
-    // a One-to-many relationship, meaning that
-    // a variation can have many difficulties,
-    // but a difficulty can have ONE variation.
-    // This rule applies to all difficulties, except
-    // for hidden ones (like "picospeaker") which exist
-    // only in the chart files, and are not shown in game
-    // PLEASE DON'T MODIFY THIS VARIABLE!!!
-    var difficultiesToVariations:Array<Array<String>> = [
-        ["easy","normal","hard","erect","nightmare"],
-        ["default","default","default","erect","erect"]
-    ];
-
     // PLEASE DON'T MODIFY THIS VARIABLE!!!
     /**
      * Used for tracking setup completion.
@@ -69,48 +56,6 @@ class VariationInjector extends Module {
         trace('[vari-injector]  -  Successfully injected variation to song '+'('+variId+' => '+songId+')');
     }
 
-    var forRemovalDiffVALI:Array<String>;
-    var forRemovalVariVALI:Array<String>;
-    var songVALI:Song;
-
-    function validateDifficulties():Void {
-        for (songId in SongRegistry.instance.listBaseGameSongIds().concat(SongRegistry.instance.listModdedSongIds())) {
-            songVALI = SongRegistry.instance.fetchEntry(songId);
-            songVALI.difficulties.clear();
-            songVALI.populateDifficulties();
-            forRemovalVariVALI = [];
-            for (vari in songVALI.variations) {
-                forRemovalDiffVALI = [];
-                for (diff in songVALI._metadata.get(vari).playData.difficulties) {
-                    if (difficultiesToVariations[0].contains(diff)) {
-                        if (difficultiesToVariations[1][difficultiesToVariations[0].indexOf(diff)] != vari) {
-                            var differentVari = difficultiesToVariations[1][difficultiesToVariations[0].indexOf(diff)];
-                            PolymodErrorHandler.showAlert("Variation-Difficulty Relationship Error", "Tried to add"+
-                                " a difficulty ("+diff+") to a variation ("+vari+"), but the difficulty already had"+
-                                " a different variation assigned to it ("+differentVari+") (on song: "+songVALI.id+").");
-                            forRemovalDiffVALI.push(diff);
-                        }
-                        continue;
-                    }
-                    difficultiesToVariations[0].push(diff);
-                    difficultiesToVariations[1].push(vari);
-                }
-                for (diff in forRemovalDiffVALI) {
-                    songVALI._metadata.get(vari).playData.difficulties.remove(diff);
-                    var variationSuffix:String = (vari != Constants.DEFAULT_VARIATION) ? '-'+vari : '';
-                    songVALI.difficulties.remove(diff+variationSuffix);
-                }
-                if (songVALI._metadata.get(vari).playData.difficulties.length == 0) {
-                    forRemovalVariVALI.push(vari);
-                }
-            }
-            for (vari in forRemovalVariVALI) {
-                songVALI.variations.remove(vari);
-                songVALI._metadata.remove(vari);
-            }
-        }
-    }
-
     function setup():Void {
         if (this.finishedSetup) {return;}
 
@@ -139,11 +84,7 @@ class VariationInjector extends Module {
                 this.injectVariationToSong(variId, songId);
             }
         }
-        trace("[vari-injector]  -  Finished injecting variations");
-
-        this.validateDifficulties();
-
-        trace("[vari-injector]  -  Finished validating difficulties up variations");
+        trace("[vari-injector]  -  Finished injecting variations!");
 
         this.finishedSetup = true;
     }
