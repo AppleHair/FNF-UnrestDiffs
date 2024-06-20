@@ -1,3 +1,5 @@
+![UD-Logo](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/UD-Logo.gif)
+
 # Unrestricted Difficulties
 
 The Unrestricted Difficulties framework is a softcoded FNF mod, which provides FNF modders with more control over difficulties and variations.
