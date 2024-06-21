@@ -1,7 +1,6 @@
 Add more comments to the code
 Re-write mod descriptions and README
 Write some basic instructions for specific features
-Make a proper logo for the framework
 
 Future Plans:
 
