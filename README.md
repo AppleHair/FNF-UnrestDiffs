@@ -1,16 +1,16 @@
-![UD-Logo](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/UD-Logo.gif)
+![UD-Logo](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/art/UD-Logo.gif)
 
 # Unrestricted Difficulties
 
-The Unrestricted Difficulties framework is a softcoded FNF mod, which provides FNF modders with more control over difficulties and variations.
+The Unrestricted Difficulties framework is a soft-coded FNF mod, which gives FNF modders more control over difficulties and variations.
 
 ## Features
 
 The framework includes the following features:
 - Makes your custom song variations appear in freeplay (was relevant before 0.4.0, but now it's already implemented in the base game) and story mode (still relevant).
-- Adds a variation injection system, which lets you inject your own variations into existing songs, without overriding their default metadata files.
+- Adds a variation injection system, which lets you inject your variations into existing songs, without overriding their default metadata files.
 - Adds a difficulty sorting system, which orders difficulties in freeplay and story mode according to priority numbers.
-- Support for custom difficulty sprites in result screen (was relevant before 0.4.0, but now it's already implemented in the base game), which can also be animated (still relevant).
+- Support for custom difficulty sprites in the result screen (was relevant before 0.4.0, but now it's already implemented in the base game), which can also be animated (still relevant).
 - Adds difficulty display name trimming to the pause menu (and hopefully to the discord RPC too when it gets added to FNF), which will trim a difficulty's variation name from the difficulty's display name if its name starts with the variation name (this doesn't apply to difficulty names that are the same as the variation name).
 - Improved story mode menu, with the following key improvements:
   - Limits the range of difficulties you can choose from and changes the song list according to the songs and difficulties available in each level, as opposed to relying on a constant and displaying only "easy", "normal" and "hard" (which means you can play base game levels on "erect" and "nightmare" difficulties from the story mode menu using this framework).
