@@ -22,15 +22,11 @@ class DiffDefiner extends Module {
     // PLEASE DON'T MODIFY THIS VARIABLE!!!
     var difficultyDefs:Array<Array<String>> = [
         ["easy","normal","hard","erect","nightmare"],
-        ["1","3","5","1","3"]
+        ["1","3","5","7","9"]
     ];
-    var variIndexByDiff:Array<Int> = [0,0,0,1,1];
 
     // PLEASE DON'T MODIFY THIS VARIABLE!!!
-    var variationDefs:Array<Array<String>> = [
-        ["default","erect"],
-        ["1","3"]
-    ];
+    var variationDefs:Array<String> = ["default","erect"];
     var diffIndicesByVari:Array<Array<Int>> = [[0,1,2],[3,4]];
 
     // PLEASE DON'T MODIFY THIS VARIABLE!!!
@@ -40,16 +36,6 @@ class DiffDefiner extends Module {
     var finishedSetup:Bool = false;
 
     function sortDifficulties(a:String, b:String):Int {
-        var numAv:Null<Int> = Std.parseInt(this.variationDefs[1][this.variIndexByDiff[this.difficultyDefs[0].indexOf(a)]]);
-        var numBv:Null<Int> = Std.parseInt(this.variationDefs[1][this.variIndexByDiff[this.difficultyDefs[0].indexOf(b)]]);
-        if (numAv == null || numBv == null) {return 0;}
-        if (numAv < numBv) {
-            return -1;
-        }
-        if (numAv > numBv) {
-            return 1;
-        }
-
         var numAd:Null<Int> = Std.parseInt(this.difficultyDefs[1][this.difficultyDefs[0].indexOf(a)]);
         var numBd:Null<Int> = Std.parseInt(this.difficultyDefs[1][this.difficultyDefs[0].indexOf(b)]);
         if (numAd == null || numBd == null) {return 0;}
@@ -71,25 +57,25 @@ class DiffDefiner extends Module {
         }
     }
 
-    function defineVariation(variId:String, priority:String):Void {
-        if (this.variationDefs[0].contains(variId)) {return;}
-        this.variationDefs[0].push(variId);
-        this.variationDefs[1].push(priority.split(".")[0]);
+    function defineVariation(variId:String):Void {
+        if (this.variationDefs.contains(variId)) {return;}
+        this.variationDefs.push(variId);
         this.diffIndicesByVari.push([]);
     }
 
     function defineDifficulty(diffId:String, variId:String, priority:String):Void {
-        if (this.difficultyDefs[0].contains(diffId)) {return;}
-        var variIndex:Int = this.variationDefs[0].indexOf(variId);
+        var variIndex:Int = this.variationDefs.indexOf(variId);
         if (variIndex == -1) {
-            defineVariation(variId, "1");
-            variIndex = this.variationDefs[0].indexOf(variId);
+            defineVariation(variId);
+            variIndex = this.variationDefs.indexOf(variId);
         }
-
+        if (this.difficultyDefs[0].contains(diffId)) {
+            this.diffIndicesByVari[variIndex].push(this.difficultyDefs[0].indexOf(diffId));
+            return;
+        }
         this.difficultyDefs[0].push(diffId);
         this.difficultyDefs[1].push(priority.split(".")[0]);
         this.diffIndicesByVari[variIndex].push(this.difficultyDefs[0].length-1);
-        this.variIndexByDiff.push(variIndex);
     }
 
     // Difficulties and variations MUST have
@@ -125,7 +111,7 @@ class DiffDefiner extends Module {
                         }
                         continue;
                     }
-                    defineVariation(vari, "");
+                    defineVariation(vari);
                     defineDifficulty(diff, vari, "");
                     trackedDifficultiesVALI[0].push(diff);
                     trackedDifficultiesVALI[1].push(vari);
@@ -155,16 +141,6 @@ class DiffDefiner extends Module {
 
         var UDPaths = ModuleHandler.getModule("ud-paths");
 
-        // VARIATIONS
-        checkForDefinitionData(Paths.txt(
-        UDPaths.scriptCall("definitions", [true])),
-        function(res:Array<String>):Void {
-            if (res.length < 1) {return;}
-            if (res.length < 2) {res.push('');}
-            defineVariation(res[0], res[1]);
-        });
-
-        // DIFFICULTIES
         checkForDefinitionData(Paths.txt(
         UDPaths.scriptCall("definitions", [false])),
         function(res:Array<String>):Void {

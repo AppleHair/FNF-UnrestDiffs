@@ -131,7 +131,7 @@ class AltLevelData extends Module {
 
     function addLevelAltDataForVariation(levelId:String, variationId:String, ?data:Dynamic):Void {
         trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on variation ('+variationId+')');
-        var variIndex = ModuleHandler.getModule("diff-definer").scriptGet("variationDefs")[0].indexOf(variationId);
+        var variIndex = ModuleHandler.getModule("diff-definer").scriptGet("variationDefs").indexOf(variationId);
         if (variIndex == -1) {return;}
         var variDifficulties:Array<String> = ModuleHandler.getModule("diff-definer").
         scriptGet("diffIndicesByVari")[variIndex].map(function(diffIndex:Int):String {
@@ -180,7 +180,7 @@ class AltLevelData extends Module {
         // default variation is not recommended.
         // Please use the default level data instead.
         var allVariations:Array<String> = ModuleHandler.
-            getModule("diff-definer").scriptGet("variationDefs")[0].copy();
+            getModule("diff-definer").scriptGet("variationDefs").copy();
         allVariations.remove("default");
 
         for (variationId in allVariations) {
