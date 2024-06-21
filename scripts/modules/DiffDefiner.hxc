@@ -63,7 +63,12 @@ class DiffDefiner extends Module {
         this.diffIndicesByVari.push([]);
     }
 
-    function defineDifficulty(diffId:String, variId:String, priority:String):Void {
+    function defineDifficulty(diffId:String, priority:String, ?variId:String):Void {
+        if (variId == null && !this.difficultyDefs[0].contains(diffId)) {
+            this.difficultyDefs[0].push(diffId);
+            this.difficultyDefs[1].push(priority.split(".")[0]);
+            return;
+        }
         var variIndex:Int = this.variationDefs.indexOf(variId);
         if (variIndex == -1) {
             defineVariation(variId);
@@ -112,7 +117,7 @@ class DiffDefiner extends Module {
                         continue;
                     }
                     defineVariation(vari);
-                    defineDifficulty(diff, vari, "");
+                    defineDifficulty(diff, "", vari);
                     trackedDifficultiesVALI[0].push(diff);
                     trackedDifficultiesVALI[1].push(vari);
                     // trackedDifficultiesVALI[2].push(charId);
@@ -146,7 +151,7 @@ class DiffDefiner extends Module {
         function(res:Array<String>):Void {
             if (res.length < 2) {return;}
             if (res.length < 3) {res.push('');}
-            defineDifficulty(res[0], res[1], res[2]);
+            defineDifficulty(res[0], res[1]);
         });
 
         validateDifficulties();
