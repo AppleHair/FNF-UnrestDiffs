@@ -67,7 +67,7 @@ class DiffDefiner extends Module {
         for (line in Assets.getText(path).split("\n")) {
             if (line == "") {continue;}
             if (StringTools.startsWith(line, "//")) {continue;}
-            callback(line.split(',').map(function(e:String):String {return StringTools.trim(e);}));
+            callback(line.split(",").map(function(e:String):String {return StringTools.trim(e);}));
         }
     }
 
@@ -81,7 +81,10 @@ class DiffDefiner extends Module {
     function defineDifficulty(diffId:String, variId:String, priority:String):Void {
         if (this.difficultyDefs[0].contains(diffId)) {return;}
         var variIndex:Int = this.variationDefs[0].indexOf(variId);
-        if (variIndex == -1) {return;}
+        if (variIndex == -1) {
+            defineVariation(variId, "1");
+            variIndex = this.variationDefs[0].indexOf(variId);
+        }
 
         this.difficultyDefs[0].push(diffId);
         this.difficultyDefs[1].push(priority.split(".")[0]);
@@ -90,36 +93,43 @@ class DiffDefiner extends Module {
     }
 
     // Difficulties and variations MUST have
-    // a One-to-many relationship, meaning that
-    // a variation can have many difficulties,
-    // but a difficulty can have ONE variation.
+    // a One-to-many relationship per-song, meaning
+    // that in every song, a variation can have many
+    // difficulties, but a difficulty can only have 
+    // ONE variation.
     // This rule applies to all difficulties, except
     // for hidden ones (like "picospeaker") which exist
-    // only in the chart files, and are not shown in game
+    // only in the chart files, and are not shown in game.
     var forRemovalDiffVALI:Array<String>;
     var forRemovalVariVALI:Array<String>;
     var songVALI:Song;
+    var trackedDifficultiesVALI:Array<Array<String>>;
+    // TODO: Make this check consider character selection when it's implemented
     function validateDifficulties():Void {
         for (songId in SongRegistry.instance.listBaseGameSongIds().concat(SongRegistry.instance.listModdedSongIds())) {
             songVALI = SongRegistry.instance.fetchEntry(songId);
             songVALI.difficulties.clear();
             songVALI.populateDifficulties();
             forRemovalVariVALI = [];
+            trackedDifficultiesVALI = [[],[]];
             for (vari in songVALI.variations) {
                 forRemovalDiffVALI = [];
                 for (diff in songVALI._metadata.get(vari).playData.difficulties) {
-                    if (difficultyDefs[0].contains(diff)) {
-                        if (variationDefs[0][this.variIndexByDiff[this.difficultyDefs[0].indexOf(diff)]] != vari) {
-                            var realVari:String = variationDefs[0][this.variIndexByDiff[this.difficultyDefs[0].indexOf(diff)]];
+                    if (trackedDifficultiesVALI[0].contains(diff)) {
+                        if (trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)] != vari) {
+                            var realVari:String = trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)];
                             PolymodErrorHandler.showAlert("Variation-Difficulty Relationship Error", "Tried to add"+
-                                " a difficulty ("+diff+") to a variation ("+vari+"), but the difficulty already had"+
-                                " a different variation assigned to it ("+realVari+") (on song: "+songVALI.id+").");
+                                " the difficulty \""+diff+"\" to the variation \""+vari+"\" in the song \""+songVALI.id+"\","+
+                                " but the difficulty already had the \""+realVari+"\" variation assigned to it in this song.");
                             forRemovalDiffVALI.push(diff);
                         }
                         continue;
                     }
-                    defineVariation(vari, '');
-                    defineDifficulty(diff, vari, '');
+                    defineVariation(vari, "");
+                    defineDifficulty(diff, vari, "");
+                    trackedDifficultiesVALI[0].push(diff);
+                    trackedDifficultiesVALI[1].push(vari);
+                    // trackedDifficultiesVALI[2].push(charId);
                 }
                 for (diff in forRemovalDiffVALI) {
                     songVALI._metadata.get(vari).playData.difficulties.remove(diff);
