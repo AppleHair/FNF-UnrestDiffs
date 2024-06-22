@@ -1,16 +1,35 @@
 import flixel.text.FlxText;
 import funkin.modding.module.Module;
+import funkin.play.PauseMode;
 import funkin.play.PauseSubState;
 import funkin.play.PlayState;
 import funkin.ui.AtlasText;
 import StringTools;
 
+/**
+ * A module that applys difficulty display name trimming
+ * to the pause menu, difficulty change list and hopfully
+ * discord RPC when it gets implemented properly in FNF.
+ * 
+ * What difficulty display name trimming does is that it
+ * removes the variation name from the start of the difficulty
+ * name when the difficulty name isn't identical to the variation
+ * name, but does start with it. For example, if the difficulty
+ * name is "picohard" and the variation name is "pico", the
+ * difficulty name will be trimmed to "hard" instead of "picohard".
+ * 
+ * This feature lets multiple variations have the same difficulty
+ * names in the same song, while still keeping them distinguishable.
+ */
 class DiffNameTrim extends Module {
     
     function new() {
         super("diff-name-trim");
     }
 
+    // This function was originally from FNF's funkin.utils.tools.StringTools class,
+    // but I can't import it without causing a conflict with the StringTools class
+    // of haxe's standard library, so I'm just copying it here.
     /**
      * Converts a string to title case. For example, "hello world" becomes "Hello World".
      *
@@ -30,6 +49,9 @@ class DiffNameTrim extends Module {
         return result;
     }
 
+    // This function was originally from FNF's funkin.utils.tools.StringTools class,
+    // but I can't import it without causing a conflict with the StringTools class
+    // of haxe's standard library, so I'm just copying it here.
     /**
      * Strip a given prefix from a string.
      * @param value The string to strip.
@@ -43,41 +65,90 @@ class DiffNameTrim extends Module {
         return value;
     }
 
+    /**
+     * Trims the variation name from the start of the difficulty name if it's present.
+     * If the difficulty name is identical to the variation name, the difficulty name is returned as is.
+     * @param diff the difficulty name
+     * @param vari the variation name
+     * @param title whether to convert the result to title case
+     * @return String
+     */
     function trimDifficultyName(diff:String, vari:String, ?title:Bool = true):String {
         var result = stripPrefix(diff, vari);
         if (diff.length <= vari.length) {result = diff;}
         return title ? toTitleCase(result) : result;
     }
 
+    /**
+     * Replaces the difficulty name in the pause menu metadata.
+     * 
+     * This function is meant to get attached to
+     * the metadata group's memberAdded signal.
+     * @param entry the metadata entry to check for replacement
+     */
     function pauseMetadataDifficultyNameReplacer(entry:FlxText):Void {
         if (PlayState.instance == null) {return;}
         if (!StringTools.startsWith(entry.text,"Difficulty: ")) {return;}
-
+        // If the entry's text starts with "Difficulty: ",
+        // the difficulty name will be after that, so we
+        // create the trimmed name and add it to the end
+        // of the "Difficulty: " string.
         entry.text = "Difficulty: "+this.trimDifficultyName(
             PlayState.instance.currentDifficulty,
             PlayState.instance.currentVariation
         );
     }
 
+    /**
+     * Whenever the pause menu is opened as a substate,
+     * it's instance is stored here so we can access it.
+     */
     var pauseSubstate:PauseSubState = null;
 
+    /**
+     * Replaces the difficulty names in the pause menu's difficulty change list.
+     * 
+     * This function is meant to get attached to
+     * the menuEntryText group's memberAdded signal.
+     * @param entry the difficulty change list entry to check for replacement.
+     */
     function pauseDifficultyChangeListNameReplacer(entry:AtlasText):Void {
         if (PlayState.instance == null) {return;}
         if (this.pauseSubstate == null) {return;}
         if (this.pauseSubstate.currentMenuEntries == null) {return;}
 
         var entriesLen = this.pauseSubstate.currentMenuEntries.length;
-        if (this.pauseSubstate.currentMenuEntries[entriesLen-1].text != 'Back') {return;}
+        // If the current mode isn't Difficulty, we don't need to replace anything.
+        if (this.pauseSubstate.currentMode != PauseMode.Difficulty) {return;}
 
+        // Get the list of all the difficulties which 
+        // should be displayed on the difficulty change list
         var diffList = PlayState.instance.currentSong.
             listDifficulties(PlayState.instance.currentVariation, true);
-
+        // Get the index of the entry in the group's members array
         var index = this.pauseSubstate.menuEntryText.group.members.indexOf(entry);
         if (index == -1 || index >= diffList.length) {return;}
-
+        // Use the index to replace the difficulty's name with a trimmed one
         entry.text = this.trimDifficultyName(diffList[index],PlayState.instance.currentVariation,false);
+
+        // It would've been nice to just check if diffList contains entry.text, but
+        // the difficulty IDs get converted to title case in the difficulty change list,
+        // so you can't make an accurate comparison between them. Using toLowerCase won't
+        // help because the original difficulty ID isn't guaranteed to be lower-case, and if
+        // you use toLowerCase on both of them, your comparison becomes too general and unstable
+        // ("THIS STRING" == "this string")
     }
 
+    /**
+     * Finds the groups we want to replace entrys
+     * in when they get added to the pause menu (when it's
+     * created), and attaches the other necessary replacment
+     * functions to their memberAdded signals.
+     * 
+     * This function is meant to get attached to
+     * the pause menu substate's memberAdded signal.
+     * @param maybeSomething Potentially one of the groups we need
+     */
     function pauseDifficultyNameReplacer(maybeSomething):Void {
         if (this.pauseSubstate == null) {return;}
 
@@ -92,6 +163,12 @@ class DiffNameTrim extends Module {
             add(this.pauseDifficultyChangeListNameReplacer);
     }
 
+    /**
+     * Get the pause menu instance before it's opened,
+     * save it in this.pauseSubstate and attach the
+     * pauseDifficultyNameReplacer function to it's
+     * memberAdded signal.
+     */
     public override function onSubStateOpenBegin(event:SubStateScriptEvent):Void {
         super.onSubStateOpenBegin(event);
         if (Std.isOfType(event.targetState, PauseSubState)) {
@@ -99,8 +176,15 @@ class DiffNameTrim extends Module {
             this.pauseSubstate.memberAdded.add(this.pauseDifficultyNameReplacer);
         }
     }
-
+    
+    /**
+     * Every time the song loads, change the current difficuly
+     * ID to the trimmed difficulty display name of that ID, run
+     * initDiscord again and then change the current difficulty ID
+     * back to what it was before.
+     */
     public override function onSongLoaded(event:SongLoadScriptEvent):Void {
+        super.onSongLoaded(event);
         if (PlayState.instance == null) {return;}
         PlayState.instance.currentDifficulty = this.trimDifficultyName(
             PlayState.instance.currentDifficulty,
@@ -109,6 +193,5 @@ class DiffNameTrim extends Module {
         );
         PlayState.instance.initDiscord();
         PlayState.instance.currentDifficulty = event.difficulty;
-        super.onSongLoaded(event);
     }
 }

@@ -1,28 +1,64 @@
 import funkin.modding.module.Module;
 
+/**
+ * This module is used to generate paths to UD data folders
+ * (the paths are relative to "assets/data/", "mods/[mod name]/data/",
+ * "mods/[mod name]/_append/data", etc.).
+ * 
+ * Fields with the public modifier should be used by other scripts.
+ * Fields without the public modifier shouldn't be modified by other
+ * scripts, but can be read by them when nessesary.
+ */
 class UDPaths extends Module {
+
     function new() {
         super("ud-paths", -1);
     }
 
+    /**
+     * UD data base folder.
+     */
     var BASE_UD_PATH:String = "UD/";
 
+    /**
+     * Alternative level data folder.
+     */
     var LEVELS_ALT_PREFIX:String = "levels-alt/";
 
+    /**
+     * Variation injections folder.
+     */
     var VART_INJECT_PREFIX:String = "vari-injections/";
 
-    public function variationInjection(variId:String = '') {
+    /**
+     * Generates a path to a variation injection file.
+     * @param variId The ID of the target variation
+     * @return The generated path
+     */
+    public function variationInjection(variId:String = ''):String {
         return BASE_UD_PATH+VART_INJECT_PREFIX+variId;
     }
 
-    public function definitions(variations:Bool = false) {
+    /**
+     * Generates a path to a definitions file.
+     * @param variations UD originally had a variation definitions file with variation priority numbers, but it was removed from the final version.
+     * @return The generated path
+     */
+    public function definitions(variations:Bool = false):String {
         if (variations) {
             return BASE_UD_PATH+"variations";
         }
         return BASE_UD_PATH+"difficulties";
     }
 
-    public function levelAlt(folderId:String, variations:Bool = false, levelId:String = '') {
+    /**
+     * Generates a path to a level alt data file or folder.
+     * @param folderId The ID of the target folder (which might be the variation ID or the difficulty ID, depending on the value of the `variations` parameter).
+     * @param variations Whether to generate a path to the variations folder or the difficulties folder.
+     * @param levelId The ID of the target level. when not specified, the path will point to the folder itself.
+     * @return The generated path
+     */
+    public function levelAlt(folderId:String, variations:Bool = false, levelId:String = ''):String {
         if (variations) {
             return BASE_UD_PATH+LEVELS_ALT_PREFIX+"variations/"+folderId+"/"+levelId;
         }

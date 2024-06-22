@@ -86,7 +86,7 @@ class DiffDefiner extends Module {
     // Difficulties and variations MUST have
     // a One-to-many relationship per-song, meaning
     // that in every song, a variation can have many
-    // difficulties, but a difficulty can only have 
+    // difficulties, but a difficulty can only have
     // ONE variation.
     // This rule applies to all difficulties, except
     // for hidden ones (like "picospeaker") which exist
@@ -95,7 +95,6 @@ class DiffDefiner extends Module {
     var forRemovalVariVALI:Array<String>;
     var songVALI:Song;
     var trackedDifficultiesVALI:Array<Array<String>>;
-    // TODO: Make this check consider character selection when it's implemented
     function validateDifficulties():Void {
         for (songId in SongRegistry.instance.listBaseGameSongIds().concat(SongRegistry.instance.listModdedSongIds())) {
             songVALI = SongRegistry.instance.fetchEntry(songId);
@@ -107,6 +106,7 @@ class DiffDefiner extends Module {
                 forRemovalDiffVALI = [];
                 for (diff in songVALI._metadata.get(vari).playData.difficulties) {
                     if (trackedDifficultiesVALI[0].contains(diff)) {
+                        // TODO: Make this check consider character selection when it's implemented
                         if (trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)] != vari) {
                             var realVari:String = trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)];
                             PolymodErrorHandler.showAlert("Variation-Difficulty Relationship Error", "Tried to add"+
