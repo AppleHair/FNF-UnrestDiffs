@@ -182,6 +182,10 @@ class DiffNameTrim extends Module {
      * ID to the trimmed difficulty display name of that ID, run
      * initDiscord again and then change the current difficulty ID
      * back to what it was before.
+     * 
+     * This should hopefully work for the discord RPC when
+     * PR #2330 by @AltronMaxX gets merged into FNF and
+     * included in the next update release.
      */
     public override function onSongLoaded(event:SongLoadScriptEvent):Void {
         super.onSongLoaded(event);
