@@ -1,11 +1,10 @@
-// TODO: Add more comments to this file
+import funkin.data.song.SongRegistry;
 import funkin.modding.module.Module;
 import funkin.modding.module.ModuleHandler;
 import funkin.modding.PolymodErrorHandler;
 import funkin.Paths;
-import funkin.ui.freeplay.FreeplayState;
-import funkin.data.song.SongRegistry;
 import funkin.play.song.Song;
+import funkin.ui.freeplay.FreeplayState;
 import funkin.util.Constants;
 import funkin.util.tools.ArrayTools;
 import haxe.ds.ArraySort;
@@ -13,101 +12,202 @@ import Int;
 import openfl.utils.Assets;
 import StringTools;
 
+/**
+ * This module tracks all the difficulties and variations
+ * in the game and makes sure they are valid and don't have
+ * any conflicts. It also sorts the difficulties by their
+ * prioritys, which are defined in "data/UD/difficulties.txt"
+ * by multiple mods using polymod's append logic.
+ */
 class DiffDefiner extends Module {
 
     function new() {
         super('diff-definer', 1);
     }
 
-    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    // YOU SHOULD NOT MODIFY THE FOLLOWING VALUES DIRECTLY!!!
+    // You are only allowed to read from them if you really need to,
+    // and you should remember that arrays get passed by reference,
+    // so if you assign an array to another variable, you will need
+    // to use the .copy() method to avoid modifying the original + if
+    // the array is nested, you will need to use the .map() method to
+    // copy the nested arrays as well.
+
+    /**
+     * Stores the difficulty names and their prioritys.
+     * Prioritys for default difficulties are pre-defined here.
+     */
     var difficultyDefs:Array<Array<String>> = [
         ["easy","normal","hard","erect","nightmare"],
         ["1","3","5","7","9"]
     ];
 
-    // PLEASE DON'T MODIFY THIS VARIABLE!!!
+    /**
+     * Stores the variation names and their difficulty indices.
+     * The indices are used to assign difficulties to variations.
+     */
     var variationDefs:Array<String> = ["default","erect"];
     var diffIndicesByVari:Array<Array<Int>> = [[0,1,2],[3,4]];
 
-    // PLEASE DON'T MODIFY THIS VARIABLE!!!
     /**
      * Used for tracking setup completion.
      */
     var finishedSetup:Bool = false;
 
+    /**
+     * This function sorts the difficulties by their prioritys.
+     * it is used as a callback for the ArraySort.sort() method.
+     */
     function sortDifficulties(a:String, b:String):Int {
+        // Get the prioritys of the difficulties
         var numAd:Null<Int> = Std.parseInt(this.difficultyDefs[1][this.difficultyDefs[0].indexOf(a)]);
         var numBd:Null<Int> = Std.parseInt(this.difficultyDefs[1][this.difficultyDefs[0].indexOf(b)]);
+        // If any of the prioritys are not defined, return 0,
+        // which means that the two difficulties will stay in
+        // the order they came in. 
         if (numAd == null || numBd == null) {return 0;}
+        // If b has a higher priority than a, return -1,
         if (numAd < numBd) {
             return -1;
         }
+        // If a has a higher priority than b, return 1,
         if (numAd > numBd) {
             return 1;
         }
+        // Otherwise, the two difficulties have the same priority,
+        // so return 0, which means that the two difficulties will
+        // stay in the order they came in.
         return 0;
     }
-
+    /**
+     * This function checks if a definition file exists,
+     * and if it does, it reads the file and calls the
+     * callback function with the processed data from the file.
+     */
     function checkForDefinitionData(path:String, callback:(res:Array<String>) -> Void):Void {
+        // If the file doesn't exist, return.
         if (!Assets.exists(path)) {return;}
+        // Read the file and split it by lines.
         for (line in Assets.getText(path).split("\n")) {
+            // Ignore empty lines and comment lines.
             if (line == "") {continue;}
             if (StringTools.startsWith(line, "//")) {continue;}
+            // Call the callback function with the processed data.
             callback(line.split(",").map(function(e:String):String {return StringTools.trim(e);}));
         }
     }
 
+    /**
+     * Adds a variation definition.
+     * @param variId The variation ID.
+     */
     function defineVariation(variId:String):Void {
+        // Don't add the variation if it already exists.
         if (this.variationDefs.contains(variId)) {return;}
         this.variationDefs.push(variId);
+        // Add an empty array for the variation's difficulty indices.
+        // This will be filled when a difficulty is defined with this variation.
         this.diffIndicesByVari.push([]);
     }
 
+    /**
+     * Adds a difficulty definition. If the difficulty is already defined,
+     * it will just make sure that it is assigned to the provided variation.
+     * @param diffId The difficulty ID.
+     * @param priority The difficulty priority.
+     * @param variId The difficulty's variation ID. (optional) 
+     */
     function defineDifficulty(diffId:String, priority:String, ?variId:String):Void {
+        // If the variation ID is not provided.
         if (variId == null && !this.difficultyDefs[0].contains(diffId)) {
+            // Add the difficulty without assigning it to a variation.
+            // It will be assigned to a variation when the validateDifficulties()
+            // function comes across this difficulty in a song.
             this.difficultyDefs[0].push(diffId);
             this.difficultyDefs[1].push(priority.split(".")[0]);
             return;
         }
+        // Make sure the provided variation ID is defined.
         var variIndex:Int = this.variationDefs.indexOf(variId);
         if (variIndex == -1) {
             defineVariation(variId);
             variIndex = this.variationDefs.indexOf(variId);
         }
+        // If the difficulty is already defined, just assign it to the provided variation.
         if (this.difficultyDefs[0].contains(diffId)) {
             this.diffIndicesByVari[variIndex].push(this.difficultyDefs[0].indexOf(diffId));
             return;
         }
+        // Otherwise, define the difficulty and assign it to the provided variation.
         this.difficultyDefs[0].push(diffId);
         this.difficultyDefs[1].push(priority.split(".")[0]);
         this.diffIndicesByVari[variIndex].push(this.difficultyDefs[0].length-1);
     }
 
-    // Difficulties and variations MUST have
-    // a One-to-many relationship per-song, meaning
-    // that in every song, a variation can have many
-    // difficulties, but a difficulty can only have
-    // ONE variation.
-    // This rule applies to all difficulties, except
-    // for hidden ones (like "picospeaker") which exist
-    // only in the chart files, and are not shown in game.
+    // These variables are used inside the validateDifficulties() function.
+    // They don't have any effect anywhere else. You can even try to change
+    // their values, but it won't have any effect on the game, because they
+    // are only used inside the validateDifficulties() function, and it always
+    // resets them at the start of the function, so just ignore them.
+    // The reason why I don't define them inside the function is because
+    // for some reason, the interpreter forgets the variables when I do that.
+    // It sounds stupid but it's true. you can check me if you want.
+    // I don't know why it happens.
     var forRemovalDiffVALI:Array<String>;
-    var forRemovalVariVALI:Array<String>;
     var songVALI:Song;
     var trackedDifficultiesVALI:Array<Array<String>>;
+    /**
+     * This function makes sure a song doesn't have any
+     * conflicting difficulties between variations. It also
+     * adds definisions for all of the difficulties and variations
+     * in the game. This gets called after the difficulty definitions
+     * file has been read and the difficulties have been added.
+     * 
+     * Difficulties and variations MUST have a One-to-many
+     * relationship per-song, meaning that in every song,
+     * a variation can have many difficulties, but a difficulty
+     * can only have ONE variation.
+     * 
+     * This rule applies to all difficulties, except
+     * for hidden ones (like "picospeaker") which exist
+     * only in the chart files, and are not shown in game.
+     * 
+     * In the future, this rule will also be checked per-character,
+     * meaning that a difficulty can have a different variation on a
+     * different character in the song, but this feature is not
+     * implemented yet in the base game.
+     * 
+     * Another thing this function does is that it makes sure all the
+     * difficulties that were added from the variation injections are
+     * added to the song's difficulties map.
+     */
     function validateDifficulties():Void {
+        // Iterate through all the song IDs in the game.
         for (songId in SongRegistry.instance.listBaseGameSongIds().concat(SongRegistry.instance.listModdedSongIds())) {
+            // Fetch the song from the song registry.
             songVALI = SongRegistry.instance.fetchEntry(songId);
+            // In order to apply variation injection, we need to clear the difficulties map
+            // and re-populate the difficulties, so that the difficulties from the injected 
+            // variations get added to the song's difficulties map.
             songVALI.difficulties.clear();
             songVALI.populateDifficulties();
-            forRemovalVariVALI = [];
+            // Reset the tracked difficulties array.
             trackedDifficultiesVALI = [[],[]];
+            // Iterate through all the variations in the song.
             for (vari in songVALI.variations) {
+                // Reset the array of difficulties for removal.
                 forRemovalDiffVALI = [];
+                // Make sure the variation is defined.
+                defineVariation(vari);
+                // Iterate through all the difficulties in the variation.
                 for (diff in songVALI._metadata.get(vari).playData.difficulties) {
+                    // If the difficulty is already tracked, it means there might be a conflict.
                     if (trackedDifficultiesVALI[0].contains(diff)) {
+                        // if the difficulty is tracked with a different variation
+                        // than the one we are trying to add it to, then there must be a conflict.
                         // TODO: Make this check consider character selection when it's implemented
                         if (trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)] != vari) {
+                            // Show an error message and add the difficulty to the removal list.
                             var realVari:String = trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)];
                             PolymodErrorHandler.showAlert("Variation-Difficulty Relationship Error", "Tried to add"+
                                 " the difficulty \""+diff+"\" to the variation \""+vari+"\" in the song \""+songVALI.id+"\","+
@@ -116,29 +216,27 @@ class DiffDefiner extends Module {
                         }
                         continue;
                     }
-                    defineVariation(vari);
+                    // Make sure the difficulty is defined
+                    // and assign it to the variation.
                     defineDifficulty(diff, "", vari);
+                    // Track the difficulty and its variation.
                     trackedDifficultiesVALI[0].push(diff);
                     trackedDifficultiesVALI[1].push(vari);
                     // trackedDifficultiesVALI[2].push(charId);
                 }
+                // Remove the difficulties that had conflicts.
+                // (This will only hide them from the menus,
+                // they will still exist in the chart files
+                // and in the song's difficulties map.)
                 for (diff in forRemovalDiffVALI) {
                     songVALI._metadata.get(vari).playData.difficulties.remove(diff);
-                    var variationSuffix:String = (vari != Constants.DEFAULT_VARIATION) ? '-'+vari : '';
-                    songVALI.difficulties.remove(diff+variationSuffix);
                 }
-                if (songVALI._metadata.get(vari).playData.difficulties.length == 0) {
-                    forRemovalVariVALI.push(vari);
-                }
-            }
-            for (vari in forRemovalVariVALI) {
-                songVALI.variations.remove(vari);
-                songVALI._metadata.remove(vari);
             }
         }
+        // Free the variables that were used in the function.
         songVALI = null;
         forRemovalDiffVALI = null;
-        forRemovalVariVALI = null;
+        trackedDifficultiesVALI = null;
     }
 
     function setup():Void {
@@ -146,48 +244,65 @@ class DiffDefiner extends Module {
 
         var UDPaths = ModuleHandler.getModule("ud-paths");
 
+        // Define all the difficulties from
+        // the difficulty definitions file.
         checkForDefinitionData(Paths.txt(
         UDPaths.scriptCall("definitions", [false])),
         function(res:Array<String>):Void {
             if (res.length < 2) {return;}
+            // have an empty string as the
+            // priority if it's not provided
             if (res.length < 3) {res.push('');}
             defineDifficulty(res[0], res[1]);
         });
 
+        // Make sure there are no conflicts in difficulties
+        // between variations in the game, and make sure all
+        // the difficulties and variations in the game are defined.
+        // see this function's description for more info.
         validateDifficulties();
 
+        // Ok ok I know what you're thinking, I am not supposed to
+        // edit a constant value, but I MUST do this in order to make
+        // the difficulty sorting work. The game uses this constant
+        // everywhere in order to sort the difficulties in the menus,
+        // and there's no other way around it.
         Constants.DEFAULT_DIFFICULTY_LIST = this.difficultyDefs[0].copy();
         ArraySort.sort(Constants.DEFAULT_DIFFICULTY_LIST, sortDifficulties);
 
-        trace('[diff-sorter]  -  Finished Defining Difficulties and Variations!');
+        trace('[diff-definer]  -  Finished Defining Difficulties!');
 
         this.finishedSetup = true;
     }
 
+
+    /**
+     * Make the difficulty and variation definisions
+     * happen when the game is loaded (before the title screen).
+     */
     public override function onCreate(event:ScriptEvent):Void {
         super.onCreate();
         setup();
     }
 
+    /**
+     * If needed, re-define the difficulties and
+     * variations when the state changes (helps
+     * when the game gets reloaded when pressing F5).
+     */
     public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
         super.onStateChangeEnd();
         setup();
     }
-
-    var freeplayState:FreeplayState = null;
-
+    /**
+     * Get the freeplay menu instance after it's opened
+     * and sort the difficulties in diffIdsTotal by their
+     * prioritys (makes sorting work in "random").
+     */
     public override function onSubStateOpenEnd(event:SubStateScriptEvent):Void {
         super.onSubStateOpenEnd();
         if (Std.isOfType(event.targetState, FreeplayState)) {
-            freeplayState = event.targetState;
-        }
-    }
-
-    public override function onUpdate(event:UpdateScriptEvent):Void {
-        super.onUpdate();
-        if (freeplayState != null) {
-            ArraySort.sort(freeplayState.diffIdsTotal,sortDifficulties);
-            freeplayState = null;
+            ArraySort.sort(event.targetState.diffIdsTotal,sortDifficulties);
         }
     }
 }
