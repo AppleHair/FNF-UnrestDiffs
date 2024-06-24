@@ -297,7 +297,7 @@ class DiffDefiner extends Module {
     /**
      * Get the freeplay menu instance after it's opened
      * and sort the difficulties in diffIdsTotal by their
-     * prioritys (makes sorting work in "random").
+     * prioritys (makes sorting work in "Random").
      */
     public override function onSubStateOpenEnd(event:SubStateScriptEvent):Void {
         super.onSubStateOpenEnd();

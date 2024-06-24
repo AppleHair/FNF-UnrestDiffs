@@ -8,7 +8,11 @@ import funkin.util.tools.ArrayTools;
 import openfl.utils.Assets;
 import StringTools;
 
+/**
+ * 
+ */
 class AltLevelData extends Module {
+    
     function new() {
         super('alt-level-data', 2);
     }

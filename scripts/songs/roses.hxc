@@ -1,8 +1,4 @@
-
 import flixel.FlxG;
-import funkin.play.song.Song;
-
-import flixel.FlxSprite;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import funkin.audio.FunkinSound;
@@ -10,8 +6,8 @@ import funkin.graphics.FunkinSprite;
 import funkin.Paths;
 import funkin.play.PlayState;
 import funkin.play.PlayStatePlaylist;
+import funkin.play.song.Song;
 import funkin.Preferences;
-import funkin.ui.options.PreferencesMenu;
 
 class RosesSong extends Song {
     // Set these on onCountDownStart through

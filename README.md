@@ -1,4 +1,4 @@
-![UD-Logo](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/art/UD-Logo.gif)
+![UD-Logo](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/UD-Logo.gif)
 
 # Unrestricted Difficulties
 

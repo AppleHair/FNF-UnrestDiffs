@@ -1,16 +1,13 @@
-
 import flixel.FlxG;
-import funkin.play.song.Song;
-
-import funkin.play.PlayState;
-import funkin.Paths;
-import funkin.play.cutscene.VideoCutscene;
 import funkin.graphics.FunkinSprite;
+import funkin.Paths;
 import funkin.play.cutscene.CutsceneType;
+import funkin.play.cutscene.VideoCutscene;
+import funkin.play.PlayState;
 import funkin.play.PlayStatePlaylist;
-import funkin.ui.story.StoryMenuState;
-import funkin.util.Constants;
+import funkin.play.song.Song;
 import funkin.save.Save;
+import funkin.util.Constants;
 
 class BlazinSong extends Song {
     // Set these on onCountDownStart through

@@ -1,4 +1,3 @@
-
 import funkin.play.song.Song;
 
 class WinterHorrorlandSong extends Song {
