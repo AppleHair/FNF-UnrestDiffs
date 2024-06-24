@@ -353,7 +353,7 @@ class StoryDiffs extends Module {
             }
 
             ModuleHandler.getModule("alt-level-data")
-                .scriptCall("reloadData", [this.storyMenu.currentLevel,
+                .scriptCall("replaceData", [this.storyMenu.currentLevel,
                     this.storyMenu.currentDifficultyId+this.storyMenu.currentLevelId]);
             this.forceUpdateBackground();
 

@@ -9,7 +9,15 @@ import openfl.utils.Assets;
 import StringTools;
 
 /**
+ * This module is used for tracking and loading
+ * alternate data for levels. This is useful for
+ * customizing the way a level is displayed on
+ * the story mode menu for different variations or
+ * difficulties, and even adding difficulty/variation-specific
+ * songs to the level's song list (under certain requirements).
  * 
+ * For more information and instructions, check
+ * out the README.md file in "data/UD/levels-alt".
  */
 class AltLevelData extends Module {
     
@@ -17,101 +25,129 @@ class AltLevelData extends Module {
         super('alt-level-data', 2);
     }
 
-    // PLEASE DON'T MODIFY THIS VARIABLE!!!
-    var UDPaths:Module = null;
+    // YOU SHOULD NOT MODIFY THE FOLLOWING VALUES DIRECTLY!!!
+    // You are only allowed to read from them if you really need to,
+    // and you should remember that arrays get passed by reference,
+    // so if you assign an array to another variable, you will need
+    // to use the .copy() method to avoid modifying the original + if
+    // the array is nested, you will need to use the .map() method to
+    // copy the nested arrays as well.
 
-    // Used for tracking level alt data.
-    // PLEASE DON'T MODIFY THESE VARIABLES!!!
+    /**
+     * Tracks the default data of all levels.
+     * Using this, we can restore every level's
+     * original data after replacing it with alt data.
+     * 
+     * The first array contains the level IDs, and the
+     * second array contains the level data objects.
+     */
     var defaultLevelDatas:Array<Array<Dynamic>> = [[],[]];
-    var levelAltData:Array<Array<Dynamic>> = [[],[]];    
+    /**
+     * Stores all alt level data.
+     * 
+     * The first array contains string keys (difficultyId+levelId),
+     * and the second array contains the alt level data objects.
+     */
+    var levelAltData:Array<Array<Dynamic>> = [[],[]];
 
-    // PLEASE DON'T MODIFY THIS VARIABLE!!!
     /**
      * Used for tracking setup completion.
      */
     var finishedSetup:Bool = false;
 
     /**
-     * Reloads the data of the level with new data,
-     * while keeping the default data, so we could
-     * reuse it later.
-     * @param newData The level data to load.
+     * Replaces a level's data with alt data.
+     * If the level's original data isn't stored
+     * as default level data in this module, it won't get replaced.
+     * @param level the level whose data to replace.
+     * @param dataKey The alt level data key to use.
      */
-    function reloadData(level:Level, dataKey:String):Void {
+    function replaceData(level:Level, dataKey:String):Void {
+        // Don't replace the data if the level's original data
+        // isn't stored as default level data in this module,
+        // because we won't be able to restore it later.
         if (!this.defaultLevelDatas[0].contains(level.id)) {return;}
+        // If the requested alt level data doesn't
+        // exist, restore the level's original data.
         if (!this.levelAltData[0].contains(dataKey)) {this.resetDataToDefault(level); return;}
+
+        // Get the requested alt level data.
         var newData = this.levelAltData[1][this.levelAltData[0].indexOf(dataKey)];
-        // don't load the same data twice
+        // We don't need to load the same data twice.
         if (newData == level._data) {return;}
 
-        var thisLevelData = this.defaultLevelDatas[1][this.defaultLevelDatas[0].indexOf(level.id)];
+        // Get the level's original data.
+        var ogLevelData = this.defaultLevelDatas[1][this.defaultLevelDatas[0].indexOf(level.id)];
 
+        // Replace the level's data with the alt data.
         level._data = newData;
-        // I won't let you hide the level from
-        // story mode if it's not already hidden.
-        level._data.visible = thisLevelData.visible;
         // Adding songs to alt levels
         // gets handles somewhere else.
-        level._data.songs = thisLevelData.songs;
+        level._data.songs = ogLevelData.songs;
+        // Only the level's original data
+        // can determine its visibility!
+        level._data.visible = ogLevelData.visible;
+        
     }
 
 
     /**
-     * Resets the data of the level to the default data.
-     * Used by the story-diffs module to reset the data
-     * when an alt level data can't be found for the
-     * current variation or difficulty.
+     * Resets a level's data to its original data.
+     * @param level The level whose data to reset.
      */
     function resetDataToDefault(level:Level):Void {
-        if (!this.defaultLevelDatas[0].contains(level.id)) {
-            this.defaultLevelDatas[0].push(level.id);
-            this.defaultLevelDatas[1].push(Level._fetchData(level.id));
-        }
-        // resets the data to the default data
+        if (!this.defaultLevelDatas[0].contains(level.id)) {return;}
         level._data = this.defaultLevelDatas[1][this.defaultLevelDatas[0].indexOf(level.id)];
     }
 
 
     /**
      * Consider adding songs to the level's song list.
+     * This function gets called for every alt level data
+     * that gets detected, so you can use it to add songs
+     * to the level's song list. This should only be used
+     * before the first call to resetDataToDefault, because
+     * the songs will be added to the level's original data
+     * stored in this module, and this function relies on the
+     * level's original song list to determine if the songs
+     * should be added.
+     * @param level The level whose song list to consider adding to.
      * @param songs The list of song IDs to consider adding.
      */
     function considerAddingSongs(level:Level, songs:Array<String>):Void {
-        if (!this.defaultLevelDatas[0].contains(level.id)) {
-            this.defaultLevelDatas[0].push(level.id);
-            this.defaultLevelDatas[1].push(Level._fetchData(level.id));
-        }
-        var thisLevelData = this.defaultLevelDatas[1][this.defaultLevelDatas[0].indexOf(level.id)];
-        // the song list needs to have all the songs the level
+        // Get the level's original data.
+        var ogLevelData = this.defaultLevelDatas[1][this.defaultLevelDatas[0].indexOf(level.id)];
+        // The song list needs to have all the songs the level
         // already has, and if the level already has all the songs
         // in the song list, we don't need to add them again.
-        if (ArrayTools.isSuperset(thisLevelData.songs,songs) ||
+        if (ArrayTools.isSuperset(ogLevelData.songs,songs) ||
             !ArrayTools.isSuperset(songs, level._data.songs)) {return;}
 
-        // we'll use this array as a queue, where song's
-        // from the songs array will be added to the queue
-        // while we iterate through it.
+        // We'll use this array as a queue, meaning we
+        // only use `push` and `shift` to modify it, and
+        // songs from the `songs` array will be added to
+        // this queue while we iterate through it.
         var accumulatedSongsQueue:Array<String> = [];
         for (songId in songs) {
-            // if the song isn't already in the
+            // If the song isn't already in the
             // level's song list, add it to the queue.
-            if (thisLevelData.songs.indexOf(songId) == -1) {
+            if (ogLevelData.songs.indexOf(songId) == -1) {
                 accumulatedSongsQueue.push(songId);
                 continue;
             }
-            // otherwise, insert the songs accumulated in the queue
+            // Otherwise, insert the songs accumulated in the queue
             // behind the current song in the default songs list.
             while (accumulatedSongsQueue.length > 0) {
-                thisLevelData.songs.insert(
-                    thisLevelData.songs.indexOf(songId),
+                ogLevelData.songs.insert(
+                    ogLevelData.songs.indexOf(songId),
                     accumulatedSongsQueue.shift()
                 );
             }
         }
-        // push all the remaining songs from the
+        // Push all the remaining songs from the
         // queue to the end of the default songs list.
         while (accumulatedSongsQueue.length > 0) {
-            thisLevelData.songs.push(accumulatedSongsQueue.shift());
+            ogLevelData.songs.push(accumulatedSongsQueue.shift());
         }
 
         // using this method, we can add songs to the
@@ -130,108 +166,163 @@ class AltLevelData extends Module {
         // to appear in the default variation, because the 
         // game normally forces you to have a default variation,
         // but you can still remove it's difficulties from your
-        // song script's constructor.
+        // song script's constructor. More information on this
+        // can be found in the README.md file in "data/UD/levels-alt".
     }
 
+    /**
+     * Adds alt data to a level for a specific variation's
+     * difficulties. If the data isn't provided, it will be
+     * searched for in this variation's alt data folder.
+     * (data/UD/levels-alt/variations/{variationId}/{levelId}.json)
+     * @param levelId The ID of the level to add alt data to.
+     * @param variationId The ID of the variation to add alt data for.
+     * @param data Provided alt data for the level.
+     */
     function addLevelAltDataForVariation(levelId:String, variationId:String, ?data:Dynamic):Void {
-        trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on variation ('+variationId+')');
+        trace('[alt-level-data]  -  Request received for alt data for level ('+levelId+') on variation ('+variationId+')');
+
+        // Tries to find the variation's index in the variation definitions.
         var variIndex = ModuleHandler.getModule("diff-definer").scriptGet("variationDefs").indexOf(variationId);
         if (variIndex == -1) {return;}
+
+        // If we find it, we can create a list of all
+        // the difficulties associated with this variation.
         var variDifficulties:Array<String> = ModuleHandler.getModule("diff-definer").
         scriptGet("diffIndicesByVari")[variIndex].map(function(diffIndex:Int):String {
             return ModuleHandler.getModule("diff-definer").scriptGet("difficultyDefs")[0][diffIndex];
         });
-
+        // If the variation doesn't have any difficulties,
+        // we can stop here (usually doesn't happen).
         if (variDifficulties.length == 0) {return;}
 
+        // If the data isn't provided, Try to load it.
         if (data == null) {
-            var path = Paths.json(UDPaths.scriptCall("levelAlt", [variationId, true, levelId]));
+            var path = Paths.json(ModuleHandler.getModule("ud-paths").scriptCall("levelAlt", [variationId, true, levelId]));
+            // If the data wasn't found, we should stop here.
             if (!Assets.exists(path)) {return;}
+            // Load the data from the file.
             data = LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path);
         }
 
+        // Go over all the difficulties and add the alt data for each one.
         for (diff in variDifficulties) {
             this.addLevelAltDataForDifficulty(levelId, diff, data);
         }
 
-        trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on variation ('+variationId+')');
+        trace('[alt-level-data]  -  Successfully added alt data for level ('+levelId+') on variation ('+variationId+')');
     }
 
+    /**
+     * Adds alt data to a level for a specific difficulty.
+     * If the data isn't provided, it will be searched for
+     * in this difficulty's alt data folder.
+     * (data/UD/levels-alt/difficulties/{difficultyId}/{levelId}.json)
+     * @param levelId The ID of the level to add alt data to.
+     * @param difficultyId The ID of the difficulty to add alt data for.
+     * @param data Provided alt data for the level.
+     */
     function addLevelAltDataForDifficulty(levelId:String, difficultyId:String, ?data:Dynamic):Void {
-        trace('[story-diffs]  -  Request received for alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
+        trace('[alt-level-data]  -  Request received for alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
+
+        // If the data isn't provided, Try to load it.
         if (data == null) {
-            var path = Paths.json(UDPaths.scriptCall("levelAlt", [difficultyId, false, levelId]));
+            var path = Paths.json(ModuleHandler.getModule("ud-paths").scriptCall("levelAlt", [difficultyId, false, levelId]));
+            // If the data wasn't found, we should stop here.
             if (!Assets.exists(path)) {return;}
+            // Load the data from the file.
             data = LevelRegistry.instance.parseEntryDataRaw(StringTools.trim(Assets.getText(path)), path);
         }
 
+        // Add the level's original data to the default data list if it
+        // isn't already there, so we can keep track of it and restore it later.
+        if (!this.defaultLevelDatas[0].contains(levelId)) {
+            this.defaultLevelDatas[0].push(levelId);
+            this.defaultLevelDatas[1].push(Level._fetchData(levelId));
+        }
+
+        // Consider adding songs from this alt data to the level's song list.
         this.considerAddingSongs(LevelRegistry.instance.fetchEntry(levelId), data.songs);
 
+        // Store the provided alt data in this module as alt level data
+        // of the provided level ID for the provided difficulty ID.
         this.levelAltData[0].push(difficultyId+levelId);
         this.levelAltData[1].push(data);
-        trace('[story-diffs]  -  Successfully added alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
+
+        trace('[alt-level-data]  -  Successfully added alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
     }
 
-
-    function setup():Void {
+    function setup(UDPaths:Module):Void {
         if (this.finishedSetup) {return;}
 
-        this.UDPaths = ModuleHandler.getModule("ud-paths");
-
-        var levelIdList:Array<String> = [];
+        // Every time we need to go over a list of alt level data
+        // in a folder, this array will store the level IDs we find.
+        var levelIdList:Array<String>;
         
-        // Making alt level data for the
-        // default variation is not recommended.
-        // Please use the default level data instead.
+        // Get a list of all the variations in the game.
         var allVariations:Array<String> = ModuleHandler.
             getModule("diff-definer").scriptGet("variationDefs").copy();
+        // Remove the default variation from the list.
+        // (The default variation will always use the original data)
         allVariations.remove("default");
-
+        // Iterate over all the variations in the game except for "default".
         for (variationId in allVariations) {
-
+            // Get all the level IDs which have alt data for this variation.
             levelIdList = DataAssets.listDataFilesInPath(UDPaths.scriptCall("levelAlt", [variationId, true]), '.json').map(
                 function(levelAltDataPath:String):String {
                     return levelAltDataPath.split('/')[0];
                 }
             );
-
+            // Add alt data for each level in the list.
             for (levelId in levelIdList) {
                 this.addLevelAltDataForVariation(levelId, variationId);
             }
         }
 
+        // Get a list of all the difficulties in the game.
         var allDifficulties:Array<String> = ModuleHandler.
             getModule("diff-definer").scriptGet("difficultyDefs")[0].copy();
-
+        // Iterate over all the difficulties in the game.
         for (difficultyId in allDifficulties) {
-
+            // Get all the level IDs which have alt data for this difficulty.
             levelIdList = DataAssets.listDataFilesInPath(UDPaths.scriptCall("levelAlt", [difficultyId, false]), '.json').map(
                 function(levelAltDataPath:String):String {
                     return levelAltDataPath.split('/')[0];
                 }
             );
-
+            // Add alt data for each level in the list.
             for (levelId in levelIdList) {
                 this.addLevelAltDataForDifficulty(levelId, difficultyId);
             }
         }
 
+        // Reset all levels to their original
+        // data, as it's stored in this module.
         for (levelId in this.defaultLevelDatas[0]) {
             this.resetDataToDefault(LevelRegistry.instance.fetchEntry(levelId));
         }
 
-        trace('[story-diffs]  -  Setup completed successfully');
+        trace('[alt-level-data]  -  Setup completed successfully');
 
         this.finishedSetup = true;
     }
 
+    /**
+     * Load the alt level data when the game
+     * is loaded (before the title screen).
+     */
     public override function onCreate(event:ScriptEvent):Void {
         super.onCreate(event);
-        setup();
+        setup(ModuleHandler.getModule("ud-paths"));
     }
-
+    
+    /**
+     * If needed, reload the alt level data
+     * when the state changes (helps when the
+     * game gets reloaded when pressing F5).
+     */
     public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
         super.onStateChangeEnd(event);
-        setup();
+        setup(ModuleHandler.getModule("ud-paths"));
     }
 }

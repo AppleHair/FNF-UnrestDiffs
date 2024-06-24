@@ -18,6 +18,9 @@ import StringTools;
  * any conflicts. It also sorts the difficulties by their
  * prioritys, which are defined in "data/UD/difficulties.txt"
  * by multiple mods using polymod's append logic.
+ * 
+ * For more information and instructions,
+ * check out the README.md file in "data/UD".
  */
 class DiffDefiner extends Module {
 
@@ -239,10 +242,8 @@ class DiffDefiner extends Module {
         trackedDifficultiesVALI = null;
     }
 
-    function setup():Void {
+    function setup(UDPaths:Module):Void {
         if (this.finishedSetup) {return;}
-
-        var UDPaths = ModuleHandler.getModule("ud-paths");
 
         // Define all the difficulties from
         // the difficulty definitions file.
@@ -282,7 +283,7 @@ class DiffDefiner extends Module {
      */
     public override function onCreate(event:ScriptEvent):Void {
         super.onCreate();
-        setup();
+        setup(ModuleHandler.getModule("ud-paths"));
     }
 
     /**
@@ -292,7 +293,7 @@ class DiffDefiner extends Module {
      */
     public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
         super.onStateChangeEnd();
-        setup();
+        setup(ModuleHandler.getModule("ud-paths"));
     }
     /**
      * Get the freeplay menu instance after it's opened

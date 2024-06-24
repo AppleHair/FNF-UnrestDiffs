@@ -14,9 +14,11 @@ import String;
 import StringTools;
 
 /**
- * A module that allows you to inject variations to
- * existing songs. for more information and instructions,
- * check out the README.md file in "data/UD/vari-injections".
+ * A module that allows you to inject variations
+ * to existing songs using polymod's append logic.
+ * 
+ * For more information and instructions, check out
+ * the README.md file in "data/UD/vari-injections".
  */
 class VariationInjector extends Module {
 
@@ -55,10 +57,8 @@ class VariationInjector extends Module {
         trace('[vari-injector]  -  Successfully injected variation to song '+'('+variId+' => '+songId+')');
     }
 
-    function setup():Void {
+    function setup(UDPaths:Module):Void {
         if (this.finishedSetup) {return;}
-
-        var UDPaths = ModuleHandler.getModule("ud-paths");
 
         // gets all the variation injection files.
         var variIdList:Array<String> = DataAssets.listDataFilesInPath(
@@ -95,7 +95,7 @@ class VariationInjector extends Module {
      */
     public override function onCreate(event:ScriptEvent):Void {
         super.onCreate();
-        setup();
+        setup(ModuleHandler.getModule("ud-paths"));
     }
 
     /**
@@ -105,6 +105,7 @@ class VariationInjector extends Module {
      */
     public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
         super.onStateChangeEnd();
-        setup();
+        setup(ModuleHandler.getModule("ud-paths"));
     }
 }
+// Variation injector is so small now lol
