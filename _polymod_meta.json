@@ -1,9 +1,11 @@
 {
   "title": "Unrestricted Difficulties",
-  "description": "This module hackes the planned story menu difficulty behavior back into the game, works around freeplay difficulty restrictions, lets you inject custom variations to existing songs without collisions between mods, lets you add custom difficulty sprites for the result screen and implements the rating sorting on freeplay, which opens the door for much more flexability in difficulty modding for the base game.",
+  "homepage": "https://github.com/AppleHair/FNF-UnrestDiffs",
+  "description": "A soft-coded FNF mod, which gives FNF modders more control over difficulties and variations.",
   "contributors": [{
     "name": "AppleHair",
-    "role": "Developer"
+    "role": "Developer",
+    "url": "https://github.com/AppleHair"
   }],
   "api_version": "0.1.0",
   "mod_version": "1.0.0",
