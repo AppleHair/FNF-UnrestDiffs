@@ -1,0 +1,1 @@
+# Song Script Customization (Special Attributes)

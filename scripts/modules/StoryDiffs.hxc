@@ -1,3 +1,4 @@
+// TODO: Add more comments to this module
 import flixel.addons.transition.FlxTransitionableState;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -25,9 +26,16 @@ import openfl.utils.Assets;
 import StringTools;
 
 /**
- * In order for this to work properly,
- * the base level's script needs to use
- * the template on docs/templates/LevelScriptTemplate.hxc
+ * This module is responsible for handling the
+ * story mode difficulty selection. It is the first
+ * module that was made for this framework, when I was
+ * still just trying to make the story mode difficulty
+ * selection better. I added a lot of features to it
+ * and it became a very big module. I'll need to figure
+ * out how to split it into smaller modules, but for now,
+ * it's just a big module that handles the story mode stuff
+ * (except for alt level data, which I did manage to split
+ * into a separate module).
  */
 class StoryDiffs extends Module {
 
@@ -46,16 +54,59 @@ class StoryDiffs extends Module {
     // the array is nested, you will need to use the .map() method to
     // copy the nested arrays as well.
 
+    // event types for story mode
     var ENTERED:String = "UD_STORY_ENTER";
     var SCROLLED:String = "UD_STORY_SCROLL";
     var CONFIRMED:String = "UD_STORY_CONFIRM";
     var EXITED:String = "UD_STORY_EXIT";
 
+    /**
+     * Dispatches an event to the module handler.
+     */
+    function dispatchEvent(event:ScriptEvent):Void {
+        trace('[story-diffs]  -  Dispatching event ('+event.type+')');
+        ModuleHandler.callEvent(event);
+    }
+
     var storyMenu:StoryMenuState = null;
     var justEnteredStoryMenu:Bool = false;
     var lastRememberedDifficulty:String = StoryMenuState.rememberedDifficulty;
     var lastDifficultyList:Array<String> = Constants.DEFAULT_DIFFICULTY_LIST_FULL;
-    var lastRememberedLevelId:String = Constants.DEFAULT_SONG;// "tutorial"
+    var lastRememberedLevelId:String = "tutorial";
+    // TODO: Add more comments to these attributes
+
+    /**
+     * Fix for song instrumentals always being the default for story mode
+     */
+    public override function onSongLoaded(event:SongLoadScriptEvent):Void {
+        super.onSongLoaded(event);
+
+        if (PlayState.instance == null) {return;}
+
+        PlayState.instance.currentInstrumental = PlayState.instance.
+            currentSong.getDifficulty(PlayState.instance.currentDifficulty,
+            PlayState.instance.currentVariation).characters.instrumental;
+    }
+
+    /**
+     * Handles difficulty changes from pause menu when in story mode
+     */
+     public override function onSongRetry(event:ScriptEvent):Void {
+        super.onSongRetry(event);
+
+        if (!PlayStatePlaylist.isStoryMode ||
+            PlayState.instance.currentDifficulty == this.lastRememberedDifficulty)
+        {return;}
+        
+        this.lastRememberedDifficulty = PlayState.instance.currentDifficulty;
+        
+        if (PlayStatePlaylist.playlistSongIds.length < 1) {return;}
+
+        PlayStatePlaylist.playlistSongIds = this.getSongsFiltered(LevelRegistry.instance.fetchEntry(this.lastRememberedLevelId),
+            PlayState.instance.currentDifficulty);
+        PlayStatePlaylist.playlistSongIds.splice(0,PlayStatePlaylist.
+            playlistSongIds.indexOf(PlayState.instance.currentSong.id));
+    }
 
     public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
         // trace('called onStateChangeEnd');
@@ -75,42 +126,29 @@ class StoryDiffs extends Module {
         }
     }
 
-    // fix for song instrumentals always being the default for story mode
-    public override function onSongLoaded(event:SongLoadScriptEvent):Void {
-        super.onSongLoaded(event);
-
-        if (PlayState.instance == null) {return;}
-
-        PlayState.instance.currentInstrumental = PlayState.instance.
-            currentSong.getDifficulty(PlayState.instance.currentDifficulty,
-            PlayState.instance.currentVariation).characters.instrumental;
-    }
-
-    function dispatchEvent(event:ScriptEvent):Void {
-        trace('[story-diffs]  -  Dispatching event ('+event.type+')');
-        ModuleHandler.callEvent(event);
-    }
-
     /**
-     * Get the list of songs in this level, as an array of IDs.
-     * @return Array<String>
+     * Get a filtered list of all the songs in the level that have the current difficulty.
+     * @param level The level to get the songs from.
+     * @param difficulty The difficulty to filter the songs by.
+     * @return The filtered list of song IDs.
      */
-    function getSongsFR(level:Level, difficulty:String):Array<String> {
-        // gets the songs normally
+    function getSongsFiltered(level:Level, difficulty:String):Array<String> {
+        // Gets the songs normally
         var songs = level.getSongs();
         if (songs == null) {return null;}
-        // filter out songs that don't have
+        // Filter out songs that don't have
         // the provided difficulty
         return songs.filter(
             function(songId:String) {
-                // if the song doesn't have the  
+                // If the song doesn't have the  
                 // current difficulty, filter it out.
                 var song = SongRegistry.instance.fetchEntry(songId);
-                return song.getDifficulty(difficulty, null, song.variations) != null;
+                // TODO: check for the current character when it will be possible
+                return song.getDifficulty(difficulty, null, song.getVariationsByCharId(Constants.DEFAULT_CHARACTER)) != null;
             }
         );
 
-        // using this method, we can display
+        // Using this method, we can display
         // the maximum amount of songs possible
         // in the story menu state, while also making
         // PlayState not load songs that don't have
@@ -120,38 +158,43 @@ class StoryDiffs extends Module {
     }
 
     /**
-     * The list of difficulties the player can select from for this level.
-     * @return The difficulty IDs.
+     * Generates the full list of difficulties available in the level.
+     * This function will merge all the difficulties from all the songs
+     * and won't filter out any difficulties.
+     * @param level The level to get the difficulties from.
+     * @param difficulties The array to store the difficulties in. (optional)
+     * @return The difficulty IDs array.
      */
-    function getDifficultiesFR(level:Level, difficulties:Array<String> = []):Array<String> {
-        // calibrates the difficulties array
+    function getDifficultiesFull(level:Level, difficulties:Array<String> = []):Array<String> {
+        // Calibrates the difficulties array
         while (difficulties.length > 0) {
             difficulties.pop();
         }
-        // declare the song variable
+        // Declare the song variable
         var song = null;
-        // iterate through the songs
+        // Iterate through the songs
         // included in the level
         for (songId in level.getSongs()) {
-            // fetch the song object from the registry
+            // Fetch the song object from the registry
             song = SongRegistry.instance.fetchEntry(songId);
-            // if it doesn't exist,
+            // If it doesn't exist,
             // continue to the next song
             if (song == null) {continue;}
 
-            // iterate through the
+            // Iterate through the
             // difficulties of the song
             // (non-hidden difficulties)
-            for (diff in song.listDifficulties(null, song.variations, true, false)) {
-                // push the difficulty to the
+            // TODO: check for the current character when it will be possible
+            for (diff in song.listDifficulties(null, song.getVariationsByCharId(Constants.DEFAULT_CHARACTER), true, false)) {
+                // Push the difficulty to the
                 // difficulties array if it's not
                 // already there
                 if (!difficulties.contains(diff)) {difficulties.push(diff);}
             }
         }
-        // sort the difficulties array
+        // Sort the difficulties array
         difficulties.sort(this.sortingStoryDiffs);
-        // return the final 
+        // Return the final 
         // sorted difficulties array
         return difficulties;
 
@@ -166,9 +209,9 @@ class StoryDiffs extends Module {
 
     /**
      * uses the default difficulty list to sort the difficulties
-     * (this list gets modified by the variation injector in order
-     * to implement the difficulty "rating" system, which sorts the
-     * difficulties according to their "playData.ratings" numbers)
+     * (this list gets modified by the difficulty definer in order
+     * to implement the difficulty sorting system).
+     * Intended to be used with the sort() method.
      * @param a a member of the sorted array
      * @param b another member of the sorted array
      * @return Int
@@ -179,25 +222,35 @@ class StoryDiffs extends Module {
     }
 
     /**
-     * Get the list of songs in this level, as an array of names, for display on the menu.
+     * Get a list of the display names of the songs in the level,
+     * but make sure that the display names are taken from the
+     * variation metadata that fits the current difficulty.
+     * @param level The level to get the songs from
      * @param difficulty The difficulty of the level being displayed
+     * @param displayNames The default display names of the songs in the level. (optional)
      * @return The display names of the songs in this level
      */
-    function getSongDisplayNamesFR(level:Level, difficulty:String, ?displayNames:Array<String>):Array<String> {
+    function getSongVariDisplayNames(level:Level, difficulty:String, ?displayNames:Array<String>):Array<String> {
+        // If the display names array is null,
+        // get the default display names of the songs.
         if (displayNames == null) {
             displayNames = level.getSongDisplayNames(difficulty);
         }
+        // Get the song list from the level
         var songList:Array<String> = level.getSongs();
         if (songList == null) {return displayNames;}
+        // Get the song name list from the song list
         var songNameList:Array<String> = songList.map(function(songId:String) {
             return Level.getSongDisplayName(songId, difficulty);
         });
+        // TODO: Add more comments to this part of the function
         return displayNames.map(function(songName:String) {
             if (songName == 'Unknown') {return songName;}
             var index = songNameList.indexOf(songName);
             if (index != -1) {
                 var song = SongRegistry.instance.fetchEntry(songList[index]);
-                var vari = song.getFirstValidVariation(difficulty);
+                // TODO: check for the current character when it will be possible
+                var vari = song.getFirstValidVariation(difficulty, song.getVariationsByCharId(Constants.DEFAULT_CHARACTER));
                 if (vari == null) {return '';}
                 return song._metadata.get(vari).songName;
             }
@@ -207,10 +260,13 @@ class StoryDiffs extends Module {
         });
     }
 
-    function updateTextFR():Void {
+    /**
+     * Same as normal updateText, but it uses getSongVariDisplayNames instead.
+     */
+    function updateTextAgain():Void {
         if (this.storyMenu == null) {return;}
         this.storyMenu.tracklistText.text = 'TRACKS\n\n';
-        this.storyMenu.tracklistText.text += this.getSongDisplayNamesFR(this.storyMenu.currentLevel,
+        this.storyMenu.tracklistText.text += this.getSongVariDisplayNames(this.storyMenu.currentLevel,
             this.storyMenu.currentDifficultyId).join('\n');
 
         this.storyMenu.tracklistText.screenCenter(0x01);
@@ -225,6 +281,8 @@ class StoryDiffs extends Module {
         this.storyMenu.highScore = levelScore.score;
     }
 
+    // TODO: Continue adding more comments from this point onwards
+
     public override function onUpdate(event:UpdateScriptEvent):Void {
         if (this.storyMenu == null) {return;}
         overrideCreationCall();
@@ -233,7 +291,10 @@ class StoryDiffs extends Module {
                 boundDifficulty();
                 forceDifficultyChange();
                 determineArrowVisibility();
-                determineScrollBehavior();
+                determineScrollBehavior(
+                    this.storyMenu.currentLevel._data,
+                    this.storyMenu.currentLevel.getBackgroundColor()
+                );
                 if (this.storyMenu.controls.ACCEPT) {
                     this.dispatchEvent(new ScriptEvent(this.CONFIRMED));
                 }
@@ -243,14 +304,16 @@ class StoryDiffs extends Module {
                     FlxTransitionableState.skipNextTransIn = false;
                     FlxTransitionableState.skipNextTransOut = false;
 
-                    PlayStatePlaylist.playlistSongIds = this.getSongsFR(
+                    PlayStatePlaylist.playlistSongIds = this.getSongsFiltered(
                         LevelRegistry.instance.fetchEntry(PlayStatePlaylist.campaignId),
                         PlayStatePlaylist.campaignDifficulty
                     );
 
                     var targetSong = SongRegistry.instance.fetchEntry(PlayStatePlaylist.playlistSongIds.shift());
-
-                    var targetVariation:String = targetSong.getFirstValidVariation(PlayStatePlaylist.campaignDifficulty);
+                    
+                    // TODO: check for the current character when it will be possible
+                    var targetVariation:String = targetSong.getFirstValidVariation(PlayStatePlaylist.campaignDifficulty,
+                        targetSong.getVariationsByCharId(Constants.DEFAULT_CHARACTER));
 
                     LoadingState.loadPlayState({
                         targetSong: targetSong,
@@ -274,7 +337,7 @@ class StoryDiffs extends Module {
         determineArrowVisibility();
         this.storyMenu.buildDifficultySprite();
         this.storyMenu.funnyMusicThing();
-        this.updateTextFR();
+        this.updateTextAgain();
         this.storyMenu.refresh();
         this.dispatchEvent(new ScriptEvent(this.ENTERED));
         this.justEnteredStoryMenu = false;
@@ -283,7 +346,7 @@ class StoryDiffs extends Module {
     function boundDifficulty():Void {
         if (this.storyMenu ==  null) {return;}
 
-        var curDifficultyList = this.getDifficultiesFR(this.storyMenu.currentLevel);
+        var curDifficultyList = this.getDifficultiesFull(this.storyMenu.currentLevel);
         if (ArrayTools.isEqualUnordered(curDifficultyList, this.lastDifficultyList)) {return;}
         trace(curDifficultyList);
 
@@ -332,11 +395,7 @@ class StoryDiffs extends Module {
         this.storyMenu.rightDifficultyArrow.visible = true;
     }
 
-    // PLEASE DON'T MODIFY THESE VARIABLES!!!
-    var prvData:Dynamic = null;
-    var prvColor:Int = 0x0;
-
-    function determineScrollBehavior():Void {
+    function determineScrollBehavior(prvData:Dynamic, prvColor:Int):Void {
         if (this.storyMenu ==  null) {return;}
         if (this.storyMenu.controls.UI_RIGHT_P ||
             this.storyMenu.controls.UI_LEFT_P ||
@@ -348,8 +407,6 @@ class StoryDiffs extends Module {
             FunkinSound.playOnce(Paths.sound('scrollMenu'), 0.4);
             this.storyMenu.funnyMusicThing();
 
-            this.prvData = this.storyMenu.currentLevel._data;
-            this.prvColor = this.storyMenu.currentLevel.getBackgroundColor();
             if (this.lastRememberedLevelId != this.storyMenu.currentLevelId) {
                 var prvLevel:Level = LevelRegistry.instance.fetchEntry(this.lastRememberedLevelId);
                 prvData = prvLevel._data;
@@ -359,7 +416,7 @@ class StoryDiffs extends Module {
             ModuleHandler.getModule("alt-level-data")
                 .scriptCall("replaceData", [this.storyMenu.currentLevel,
                     this.storyMenu.currentDifficultyId+this.storyMenu.currentLevelId]);
-            this.forceUpdateBackground();
+            this.forceUpdateBackground(prvData, prvColor);
 
             if (prvData != this.storyMenu.currentLevel._data) {
                 this.storyMenu.updateProps();
@@ -367,7 +424,7 @@ class StoryDiffs extends Module {
                     Paths.image(this.storyMenu.currentLevel._data.titleAsset)
                 );
             }
-            this.updateTextFR();
+            this.updateTextAgain();
             this.storyMenu.refresh();
             trace('difficulty sprite rebuild successful \n(difficultyId: "'+this.lastRememberedDifficulty+'")');
             this.lastRememberedLevelId = this.storyMenu.currentLevelId;
@@ -376,14 +433,13 @@ class StoryDiffs extends Module {
         }
     }
 
-    function forceUpdateBackground():Void {
+    function forceUpdateBackground(prvData:Dynamic, prvColor:Int):Void {
         if (this.storyMenu ==  null) {return;}
-        // use a custom Background transition, which is
-        // the same, but for switching between difficulties
+
         var newColor:Int = this.storyMenu.currentLevel.getBackgroundColor();
 
-        if (this.prvData.background.charAt(0) == '#' && this.storyMenu.currentLevel._data.background.charAt(0) == '#') {
-            if (this.prvColor != newColor) {
+        if (prvData.background.charAt(0) == '#' && this.storyMenu.currentLevel._data.background.charAt(0) == '#') {
+            if (prvColor != newColor) {
                 // Both the previous and current level were simple backgrounds.
                 // Fade between colors directly, rather than fading one background out and another in.
                 // cancels potential tween in progress, and tweens from there
@@ -423,25 +479,5 @@ class StoryDiffs extends Module {
                 ease: FlxEase.linear
             });
         }
-    }
-
-    /**
-     * Handle difficulty changes from pause menu when in story mode
-     */
-    public override function onSongRetry(event:ScriptEvent):Void {
-        super.onSongRetry(event);
-
-        if (!PlayStatePlaylist.isStoryMode ||
-            PlayState.instance.currentDifficulty == this.lastRememberedDifficulty)
-        {return;}
-        
-        this.lastRememberedDifficulty = PlayState.instance.currentDifficulty;
-        
-        if (PlayStatePlaylist.playlistSongIds.length < 1) {return;}
-
-        PlayStatePlaylist.playlistSongIds = this.getSongsFR(LevelRegistry.instance.fetchEntry(this.lastRememberedLevelId),
-            PlayState.instance.currentDifficulty);
-        PlayStatePlaylist.playlistSongIds.splice(0,PlayStatePlaylist.
-            playlistSongIds.indexOf(PlayState.instance.currentSong.id));
     }
 }

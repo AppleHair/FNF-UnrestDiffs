@@ -1,9 +1,9 @@
-Add more comments to the code
 Re-write mod descriptions and README
 Write some basic instructions for specific features
 
 Future Plans:
 
+Finish comments on story-diffs
 Add the ability to make variation specific song scripts
 Add a simplified roses script that just changes the red fade beat if the variation is "erect"
 Move the customizable song scripts into a seperate mod
