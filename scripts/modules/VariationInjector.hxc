@@ -18,7 +18,7 @@ import StringTools;
  * to existing songs using polymod's append logic.
  * 
  * For more information and instructions, check out
- * the README.md file in "data/UD/vari-injections".
+ * the [README.md](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/data/UD/vari-injections/README.md) file in "data/UD/vari-injections".
  */
 class VariationInjector extends Module {
 

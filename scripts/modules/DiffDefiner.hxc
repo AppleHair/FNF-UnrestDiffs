@@ -20,7 +20,7 @@ import StringTools;
  * by multiple mods using polymod's append logic.
  * 
  * For more information and instructions,
- * check out the README.md file in "data/UD".
+ * check out the [README.md](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/data/UD/README.md) file in "data/UD".
  */
 class DiffDefiner extends Module {
 

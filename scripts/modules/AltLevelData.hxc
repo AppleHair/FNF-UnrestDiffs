@@ -17,7 +17,7 @@ import StringTools;
  * songs to the level's song list (under certain requirements).
  * 
  * For more information and instructions, check
- * out the README.md file in "data/UD/levels-alt".
+ * out the [README.md](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/data/UD/levels-alt/README.md) file in "data/UD/levels-alt".
  */
 class AltLevelData extends Module {
     
@@ -167,7 +167,7 @@ class AltLevelData extends Module {
         // game normally forces you to have a default variation,
         // but you can still remove it's difficulties from your
         // song script's constructor. More information on this
-        // can be found in the README.md file in "data/UD/levels-alt".
+        // can be found in the [README.md](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/data/UD/levels-alt/README.md) file in "data/UD/levels-alt".
     }
 
     /**
