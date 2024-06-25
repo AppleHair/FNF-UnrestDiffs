@@ -1,9 +1,3 @@
-[FNF Unrestricted Difficulties Logo](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/UD-Logo.gif) © 2024 by [Eytan "AppleHair" Zury](https://github.com/AppleHair) is licensed under Creative Commons Attribution-NonCommercial 4.0 International. To view a copy of this license, visit https://creativecommons.org/licenses/by-nc/4.0/
-
-[FNF Unrestricted Difficulties Icon](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/_polymod_icon.png) © 2024 by [Eytan "AppleHair" Zury](https://github.com/AppleHair) is licensed under Creative Commons Attribution-NonCommercial 4.0 International. To view a copy of this license, visit https://creativecommons.org/licenses/by-nc/4.0/
-
-## MIT License:
-
 Copyright (c) 2024 Eytan "AppleHair" Zury
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
