@@ -164,10 +164,11 @@ class AltLevelData extends Module {
         // with the alt level data which added them. This is
         // especially important if you don't want your song 
         // to appear in the default variation, because the 
-        // game normally forces you to have a default variation,
-        // but you can still remove it's difficulties from your
-        // song script's constructor. More information on this
-        // can be found in the [README.md](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/data/UD/levels-alt/README.md) file in "data/UD/levels-alt".
+        // game forces you to have a default variation, but
+        // you can still remove it's difficulties from your
+        // song script. 
+        // More information on this can be found in the
+        // [README.md](https://github.com/AppleHair/FNF-UnrestDiffs/blob/main/data/UD/levels-alt/README.md) file in "data/UD/levels-alt".
     }
 
     /**
