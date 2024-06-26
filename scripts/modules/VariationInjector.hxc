@@ -57,6 +57,9 @@ class VariationInjector extends Module {
         trace('[vari-injector]  -  Successfully injected variation to song '+'('+variId+' => '+songId+')');
     }
 
+    // Need this because Hscript has dementia
+    var variIdSETUP:String;
+
     function setup(UDPaths:Module):Void {
         if (this.finishedSetup) {return;}
 
@@ -78,12 +81,15 @@ class VariationInjector extends Module {
         for (variId in variIdList) {
             var path:String = Paths.txt(UDPaths.scriptCall("variationInjection", [variId]));
             if (!Assets.exists(path)) {continue;}
+            // REMEMBER varId
+            variIdSETUP = variId;
             for (songId in Assets.getText(path).split("\n").map(function(e:String):String {return StringTools.trim(e);})) {
                 if (songId == "") {continue;}
                 if (StringTools.startsWith(songId, "//")) {continue;}
-                this.injectVariationToSong(variId, songId);
+                this.injectVariationToSong(variIdSETUP, songId);
             }
         }
+
         trace("[vari-injector]  -  Finished injecting variations!");
 
         this.finishedSetup = true;

@@ -254,6 +254,10 @@ class AltLevelData extends Module {
         trace('[alt-level-data]  -  Successfully added alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
     }
 
+    // Need these because Hscript has dementia
+    var variIdSETUP:String;
+    var diffIdSETUP:String;
+
     function setup(UDPaths:Module):Void {
         if (this.finishedSetup) {return;}
 
@@ -275,9 +279,11 @@ class AltLevelData extends Module {
                     return levelAltDataPath.split('/')[0];
                 }
             );
+            // REMEMBER variationId
+            variIdSETUP = variationId;
             // Add alt data for each level in the list.
             for (levelId in levelIdList) {
-                this.addLevelAltDataForVariation(levelId, variationId);
+                this.addLevelAltDataForVariation(levelId, variIdSETUP);
             }
         }
 
@@ -292,9 +298,11 @@ class AltLevelData extends Module {
                     return levelAltDataPath.split('/')[0];
                 }
             );
+            // REMEMBER difficultyId
+            diffIdSETUP = difficultyId;
             // Add alt data for each level in the list.
             for (levelId in levelIdList) {
-                this.addLevelAltDataForDifficulty(levelId, difficultyId);
+                this.addLevelAltDataForDifficulty(levelId, diffIdSETUP);
             }
         }
 
