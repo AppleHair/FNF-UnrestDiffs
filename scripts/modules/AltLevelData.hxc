@@ -82,10 +82,13 @@ class AltLevelData extends Module {
         // Replace the level's data with the alt data.
         level._data = newData;
         // Adding songs to alt levels
-        // gets handles somewhere else.
+        // gets handles by considerAddingSongs.
         level._data.songs = ogLevelData.songs;
         // Only the level's original data
         // can determine its visibility!
+        // Making difficulties invisible in
+        // story mode using level alt data is
+        // handled by story-diffs' boundDifficulty.
         level._data.visible = ogLevelData.visible;
         
     }
