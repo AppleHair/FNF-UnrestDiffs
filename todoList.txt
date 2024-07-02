@@ -1,7 +1,10 @@
 Future Plans:
 
 Finish comments on story-diffs
+Remove difficulty display name trimming and just let modders define difficulty display names themselves
+Re-write the part of alt level data README which explains song additions
 Add the ability to make variation specific song scripts
 Add a simplified roses variation-specific script that just changes the red fade beat if the variation is "erect"
-Move the customizable song scripts into a seperate mod
-Add the ability to make variation specific level scripts (low priority)
+Move the customizable song scripts into a seperate mod and re-write their README to reflect this
+
+Add the ability to make difficulty/variation specific level scripts (low priority)

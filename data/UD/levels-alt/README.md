@@ -8,6 +8,8 @@ The songs list in your alt level data must have all of the songs from the origin
 
 Note that it's your responsibility to make sure the songs appear only in the variations/difficulties you want them to appear in, because added songs will appear for all the difficulties they have, regardless of the variation or difficulty associated with the alt level data which added them. This is especially important if you don't want your song to appear in the default variation, because the game forces you to have a default variation, but you can still remove it's difficulties from your song script.
 
+TODO: Replace the following paragraph with a better solution.
+
 In order to make sure your song doesn't appear in the default variation, you can add only the "normal" difficulty to the default metadata's `playData.difficulties` array, and then create a song script for the song with the following code:
 
 ```haxe
