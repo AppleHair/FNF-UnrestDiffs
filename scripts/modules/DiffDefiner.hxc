@@ -194,45 +194,48 @@ class DiffDefiner extends Module {
             // variations get added to the song's difficulties map.
             songVALI.difficulties.clear();
             songVALI.populateDifficulties();
-            // Reset the tracked difficulties array.
-            trackedDifficultiesVALI = [[],[]];
-            // Iterate through all the variations in the song.
-            for (vari in songVALI.variations) {
-                // Reset the array of difficulties for removal.
-                forRemovalDiffVALI = [];
-                // Make sure the variation is defined.
-                defineVariation(vari);
-                // Iterate through all the difficulties in the variation.
-                for (diff in songVALI._metadata.get(vari).playData.difficulties) {
-                    // If the difficulty is already tracked, it means there might be a conflict.
-                    if (trackedDifficultiesVALI[0].contains(diff)) {
-                        // if the difficulty is tracked with a different variation
-                        // than the one we are trying to add it to, then there must be a conflict.
-                        // TODO: Make this check consider character selection when it's implemented
-                        if (trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)] != vari) {
-                            // Show an error message and add the difficulty to the removal list.
-                            var realVari:String = trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)];
-                            PolymodErrorHandler.showAlert("Variation-Difficulty Relationship Error", "Tried to add"+
-                                " the difficulty \""+diff+"\" to the variation \""+vari+"\" in the song \""+songVALI.id+"\","+
-                                " but the difficulty already had the \""+realVari+"\" variation assigned to it in this song.");
-                            forRemovalDiffVALI.push(diff);
+            // Iterate through all the variations,
+            // in the song one character at a time.
+            for (variations in songVALI.charVariations.iterator()) {
+                // Reset the tracked difficulties array.
+                trackedDifficultiesVALI = [[],[]];
+                // Iterate through all the variations in this character.
+                for (vari in variations) {
+                    // Reset the array of difficulties for removal.
+                    forRemovalDiffVALI = [];
+                    // Make sure the variation is defined.
+                    defineVariation(vari);
+                    // Iterate through all the difficulties in the variation.
+                    for (diff in songVALI._metadata.get(vari).playData.difficulties) {
+                        // If the difficulty is already tracked, it means there might be a conflict.
+                        if (trackedDifficultiesVALI[0].contains(diff)) {
+                            // if the difficulty is tracked with a different variation
+                            // than the one we are trying to add it to, then there must be a conflict.
+                            // TODO: Make this check consider character selection when it's implemented
+                            if (trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)] != vari) {
+                                // Show an error message and add the difficulty to the removal list.
+                                var realVari:String = trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)];
+                                PolymodErrorHandler.showAlert("Variation-Difficulty Relationship Error", "Tried to add"+
+                                    " the difficulty \""+diff+"\" to the variation \""+vari+"\" in the song \""+songVALI.id+"\","+
+                                    " but the difficulty already had the \""+realVari+"\" variation assigned to it in this song.");
+                                forRemovalDiffVALI.push(diff);
+                            }
+                            continue;
                         }
-                        continue;
+                        // Make sure the difficulty is defined
+                        // and assign it to the variation.
+                        defineDifficulty(diff, "", vari);
+                        // Track the difficulty and its variation.
+                        trackedDifficultiesVALI[0].push(diff);
+                        trackedDifficultiesVALI[1].push(vari);
                     }
-                    // Make sure the difficulty is defined
-                    // and assign it to the variation.
-                    defineDifficulty(diff, "", vari);
-                    // Track the difficulty and its variation.
-                    trackedDifficultiesVALI[0].push(diff);
-                    trackedDifficultiesVALI[1].push(vari);
-                    // trackedDifficultiesVALI[2].push(charId);
-                }
-                // Remove the difficulties that had conflicts.
-                // (This will only hide them from the menus,
-                // they will still exist in the chart files
-                // and in the song's difficulties map.)
-                for (diff in forRemovalDiffVALI) {
-                    songVALI._metadata.get(vari).playData.difficulties.remove(diff);
+                    // Remove the difficulties that had conflicts.
+                    // (This will only hide them from the menus,
+                    // they will still exist in the chart files
+                    // and in the song's difficulties map.)
+                    for (diff in forRemovalDiffVALI) {
+                        songVALI._metadata.get(vari).playData.difficulties.remove(diff);
+                    }
                 }
             }
         }

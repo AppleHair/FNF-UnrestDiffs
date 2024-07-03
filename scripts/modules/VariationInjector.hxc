@@ -54,6 +54,14 @@ class VariationInjector extends Module {
         // Otherwise, add the new variation
         // metadata to the _metadata map.
         entry._metadata.set(variMeta.variation, variMeta);
+
+        var variChar = entry.charVariations.get(variMeta.campaignCharacter);
+        if (variChar != null) {
+            variChar.push(variMeta.variation);
+        } else {
+            entry.charVariations.set(variMeta.campaignCharacter, [variMeta.variation]);
+        }
+        
         trace('[vari-injector]  -  Successfully injected variation to song '+'('+variId+' => '+songId+')');
     }
 
