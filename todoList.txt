@@ -1,6 +1,5 @@
 Future Plans:
 
-Finish comments on story-diffs
 Remove difficulty display name trimming and just let modders define difficulty display names themselves
 Re-write the part of alt level data README which explains song additions
 Add the ability to make variation specific song scripts
