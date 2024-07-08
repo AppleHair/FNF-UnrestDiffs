@@ -37,12 +37,15 @@ class DiffDefiner extends Module {
     // copy the nested arrays as well.
 
     /**
-     * Stores the difficulty names and their prioritys.
-     * Prioritys for default difficulties are pre-defined here.
+     * Stores the difficulty IDs, their
+     * prioritys and their display names.
+     * Prioritys and display names for default
+     * difficulties are pre-defined here.
      */
     var difficultyDefs:Array<Array<String>> = [
         ["easy","normal","hard","erect","nightmare"],
-        ["1","3","5","7","9"]
+        ["1","3","5","7","9"],
+        ["","","","",""]
     ];
 
     /**
@@ -118,9 +121,10 @@ class DiffDefiner extends Module {
      * it will just make sure that it is assigned to the provided variation.
      * @param diffId The difficulty ID.
      * @param priority The difficulty priority.
+     * @param disName The difficulty display name.
      * @param variId The difficulty's variation ID. (optional) 
      */
-    function defineDifficulty(diffId:String, priority:String, ?variId:String):Void {
+    function defineDifficulty(diffId:String, priority:String, disName:String, ?variId:String):Void {
         // If the variation ID is not provided.
         if (variId == null && !this.difficultyDefs[0].contains(diffId)) {
             // Add the difficulty without assigning it to a variation.
@@ -128,6 +132,7 @@ class DiffDefiner extends Module {
             // function comes across this difficulty in a song.
             this.difficultyDefs[0].push(diffId);
             this.difficultyDefs[1].push(priority.split(".")[0]);
+            this.difficultyDefs[2].push(disName);
             return;
         }
         // Make sure the provided variation ID is defined.
@@ -144,6 +149,7 @@ class DiffDefiner extends Module {
         // Otherwise, define the difficulty and assign it to the provided variation.
         this.difficultyDefs[0].push(diffId);
         this.difficultyDefs[1].push(priority.split(".")[0]);
+        this.difficultyDefs[2].push(disName);
         this.diffIndicesByVari[variIndex].push(this.difficultyDefs[0].length-1);
     }
 
@@ -221,7 +227,7 @@ class DiffDefiner extends Module {
                     }
                     // Make sure the difficulty is defined
                     // and assign it to the variation.
-                    defineDifficulty(diff, "", vari);
+                    defineDifficulty(diff, "", "", vari);
                     // Track the difficulty and its variation.
                     trackedDifficultiesVALI[0].push(diff);
                     trackedDifficultiesVALI[1].push(vari);
@@ -250,11 +256,17 @@ class DiffDefiner extends Module {
         checkForDefinitionData(Paths.txt(
         UDPaths.scriptCall("definitions", [false])),
         function(res:Array<String>):Void {
-            if (res.length < 2) {return;}
+            if (res.length < 1) {return;}
             // have an empty string as the
             // priority if it's not provided
-            if (res.length < 3) {res.push('');}
-            defineDifficulty(res[0], res[1]);
+            if (res.length < 2) {res.push("");}
+            // have an empty string as the
+            // display name if it's not provided.
+            // This will tell the framework to use
+            // the trimming method to get the display name.
+            if (res.length < 3) {res.push("");}
+            
+            defineDifficulty(res[0], res[1], res[2]);
         });
 
         // Make sure there are no conflicts in difficulties

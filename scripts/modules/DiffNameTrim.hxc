@@ -1,5 +1,6 @@
 import flixel.text.FlxText;
 import funkin.modding.module.Module;
+import funkin.modding.module.ModuleHandler;
 import funkin.play.PauseMode;
 import funkin.play.PauseSubState;
 import funkin.play.PlayState;
@@ -7,9 +8,15 @@ import funkin.ui.AtlasText;
 import StringTools;
 
 /**
- * A module that applys difficulty display name trimming
+ * A module that applys the difficulty display names
  * to the pause menu, difficulty change list and hopfully
  * discord RPC when it gets implemented properly in FNF.
+ * It also trims the difficulty name if the difficulty
+ * display name isn't defined.
+ * 
+ * Originally, this framework didn't use pre-defined difficulty
+ * display names and the purpose of this module was only to trim
+ * the difficulty name, and the module is still named as such. 
  * 
  * What difficulty display name trimming does is that it
  * removes the variation name from the start of the difficulty
@@ -18,8 +25,9 @@ import StringTools;
  * name is "picohard" and the variation name is "pico", the
  * difficulty name will be trimmed to "hard" instead of "picohard".
  * 
- * This feature lets multiple variations have the same difficulty
- * names in the same song, while still keeping them distinguishable.
+ * This feature lets you make multiple distinguishable difficulties
+ * which display with the same name, which can help modders avoid
+ * conflicts between their mod's difficulties to another's.
  */
 class DiffNameTrim extends Module {
     
@@ -66,15 +74,20 @@ class DiffNameTrim extends Module {
     }
 
     /**
-     * Trims the variation name from the start of the difficulty name if it's present.
-     * If the difficulty name is identical to the variation name, the difficulty name is returned as is.
+     * Generates a display name for a difficulty. If the difficulty display name isn't defined,
+     * This method will try to trim the variation name from the start of the difficulty name if it's present
+     * (If the difficulty name is identical to the variation name, the difficulty name is returned as is).
      * @param diff the difficulty name
      * @param vari the variation name
      * @param title whether to convert the result to title case
      * @return String
      */
-    function trimDifficultyName(diff:String, vari:String, ?title:Bool = true):String {
-        var result = stripPrefix(diff, vari);
+    function generateDisplayName(diff:String, vari:String, ?title:Bool = true):String {
+        var result = ModuleHandler.getModule("diff-definer")
+            .scriptGet("difficultyDefs")[2][ModuleHandler.getModule("diff-definer")
+            .scriptGet("difficultyDefs")[0].indexOf(diff)];
+        if (result != "") {return title ? toTitleCase(result) : result;}
+        result = stripPrefix(diff, vari);
         if (diff.length <= vari.length) {result = diff;}
         return title ? toTitleCase(result) : result;
     }
@@ -91,9 +104,9 @@ class DiffNameTrim extends Module {
         if (!StringTools.startsWith(entry.text,"Difficulty: ")) {return;}
         // If the entry's text starts with "Difficulty: ",
         // the difficulty name will be after that, so we
-        // create the trimmed name and add it to the end
+        // generate the display name and add it to the end
         // of the "Difficulty: " string.
-        entry.text = "Difficulty: "+this.trimDifficultyName(
+        entry.text = "Difficulty: "+this.generateDisplayName(
             PlayState.instance.currentDifficulty,
             PlayState.instance.currentVariation
         );
@@ -128,8 +141,8 @@ class DiffNameTrim extends Module {
         // Get the index of the entry in the group's members array
         var index = this.pauseSubstate.menuEntryText.group.members.indexOf(entry);
         if (index == -1 || index >= diffList.length) {return;}
-        // Use the index to replace the difficulty's name with a trimmed one
-        entry.text = this.trimDifficultyName(diffList[index],PlayState.instance.currentVariation,false);
+        // Use the index to replace the difficulty's name with its display name
+        entry.text = this.generateDisplayName(diffList[index],PlayState.instance.currentVariation,false);
 
         // It would've been nice to just check if diffList contains entry.text, but
         // the difficulty IDs get converted to title case in the difficulty change list,
@@ -179,9 +192,9 @@ class DiffNameTrim extends Module {
     
     /**
      * Every time the song loads, change the current difficuly
-     * ID to the trimmed difficulty display name of that ID, run
-     * initDiscord again and then change the current difficulty ID
-     * back to what it was before.
+     * ID to the difficulty display name of that ID, run initDiscord
+     * again and then change the current difficulty ID back to what
+     * it was before.
      * 
      * This should hopefully work for the discord RPC when
      * PR #2330 by @AltronMaxX gets merged into FNF and
@@ -190,7 +203,7 @@ class DiffNameTrim extends Module {
     public override function onSongLoaded(event:SongLoadScriptEvent):Void {
         super.onSongLoaded(event);
         if (PlayState.instance == null) {return;}
-        PlayState.instance.currentDifficulty = this.trimDifficultyName(
+        PlayState.instance.currentDifficulty = this.generateDisplayName(
             PlayState.instance.currentDifficulty,
             PlayState.instance.currentVariation,
             false
