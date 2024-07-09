@@ -6,29 +6,12 @@ This framework allows you to add alternative data to levels, which will change a
 
 The songs list in your alt level data must have all of the songs from the original level data, plus the songs you want to add. Your songs will be ordered relative to the other song that are already included in the original week. For example, here's a song list for week 2 alt data for the "d-sides" variation: `["spookeez", "south", "ghastly", "monster"]`. The song "ghastly" will be added after the "south" song and before the "monster" song.
 
-Note that it's your responsibility to make sure the songs appear only in the variations/difficulties you want them to appear in, because added songs will appear for all the difficulties they have, regardless of the variation or difficulty associated with the alt level data which added them. This is especially important if you don't want your song to appear in the default variation, because the game forces you to have a default variation, but you can still remove it's difficulties from your song script.
-
-TODO: Replace the following paragraph with a better solution.
-
-In order to make sure your song doesn't appear in the default variation, you can add only the "normal" difficulty to the default metadata's `playData.difficulties` array, and then create a song script for the song with the following code:
-
-```haxe
-import funkin.play.song.Song;
-
-class GhastlySong extends Song {
-
-    public function new() {
-        super("ghastly");
-    }
-
-    override function populateDifficulties():Void {
-        super.populateDifficulties();
-        // So now every time the game will try to load the all
-        // of the difficulties, it will remove the "normal" difficulty,
-        // so we don't even need to create chart data for it.
-        this.difficulties.remove("normal");
-    }
-}
-```
-
-If this doesn't work for you or it triggers an error, please [submit an issue](https://github.com/AppleHair/FNF-UnrestDiffs/issues), describe the problem and screenshot the error.
+> [!WARNING]
+> it's your responsibility to make sure the songs appear only in the difficulties you want them to appear in, because added songs will appear for all the difficulties they have, regardless of the variation or difficulty associated with the alt level data which added them.
+> 
+> So for example, if I want the song `ghastly` to only appear in the `d-side` difficulty, I'll need to make sure I use it's default variation only with the `d-side` difficulty. However, this can be problematic when other songs in the level don't use the default variation, but an injected variation, and rely on difficulty display name trimming (which trims the **variation name** from the start of the difficulty name in menus) for difficulties like `d-sidehard` or `d-sidenormal`, because this means the difficulty will display as `hard` or `normal` for the songs which use the injected variations and will stay as `d-sidehard` or `d-sidenormal` for songs like `ghastly`, which use the default variation. We can fix this by pre-defining the display names instead of relying on display name trimming. In our case, the definision lines might look something like this:
+> ```txt
+> d-sideeasy,,easy
+> d-sidenormal,,normal
+> d-sidehard,,hard
+> ```
