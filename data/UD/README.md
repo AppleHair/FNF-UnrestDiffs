@@ -9,6 +9,7 @@ Inside the data/UD folder there's a file called "difficulties.txt". You can appe
 > - hard: 5
 > - erect: 7
 > - nightmare: 9
+> 
 > So be aware of that if you want to position your custom difficulties between the default ones.
 
 In order to use the append logic, you need to create a new folder called "_append" in the root of your mod's folder (mods/[mod name]/_append). Now, if you use this folder like your root folder, every file you put in there will be appended to the original file with the same name in the root folder. This way, you can append difficulty definitions to the difficulties.txt file without having to modify the original file.
