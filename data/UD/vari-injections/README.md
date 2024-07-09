@@ -2,7 +2,10 @@
 
 Instead of replacing existing songs' default metadata and chart files, this framework allows you to inject your variation into existing songs using polymod's append logic. This way, you can add your variation to an existing song without replacing its files, and multiple mods can add their variations to the same song without conflicting with yours.
 
-To inject your variation into existing songs, you'll need to put an empty ".txt" file in this folder, with its name as your variation's name, and then add another ".txt" file with the same name to the same place, but through the _append folder, and fill that file with the song ids you want to inject your variation to separated by new lines. This method utlizes polymod's append logic, which means every variation injection file you make will be appendable by other mods.
+To inject your variation into existing songs, you'll need to put an empty `.txt` file in this folder, with its name as your variation's name, and then add another `.txt` file with the same name to the same place, but through the `_append` folder, and fill that file with the song ids you want to inject your variation to separated by new lines. This method utlizes polymod's append logic, which means every variation injection file you make will be appendable by other mods.
+
+> [!NOTE]
+> You need to have the variation chart and metadata files placed in the songs folder for this to work (NOT through the `_append` folder). However, just remember not to replace the default ones, because this is the action variation injection was meant to replace.
 
 ## Examples
 
@@ -64,5 +67,3 @@ monster
 ```
 
 As you can see, the empty file's only purpose should be to form a base for polymod to append to, and that's why only append logic should be used to make the actual list of songs to inject the variation to.
-
-Another thing to note is that you need to have the variation chart and metadata files placed in the songs folder for this to work (NOT through the _append folder). However, just remember not to replace the default ones, because this is the action variation injection was meant to replace.
