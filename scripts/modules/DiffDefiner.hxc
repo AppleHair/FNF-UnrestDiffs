@@ -1,8 +1,10 @@
+import flixel.FlxG;
 import funkin.data.song.SongRegistry;
 import funkin.modding.module.Module;
 import funkin.modding.module.ModuleHandler;
 import funkin.modding.PolymodErrorHandler;
 import funkin.Paths;
+import funkin.play.PlayState;
 import funkin.play.song.Song;
 import funkin.ui.freeplay.FreeplayState;
 import funkin.util.Constants;
@@ -192,7 +194,20 @@ class DiffDefiner extends Module {
      */
     function validateDifficulties():Void {
         // Iterate through all the song IDs in the game.
-        for (songId in SongRegistry.instance.listBaseGameSongIds().concat(SongRegistry.instance.listModdedSongIds())) {
+        for (songId in SongRegistry.instance.listEntryIds().filter(function(id:String):Bool {
+            if (!StringTools.startsWith(id, "UD::")) {return true;}
+
+            var variSong = SongRegistry.instance.fetchEntry(id);
+            var song = SongRegistry.instance.fetchEntry(id.split("::")[1]);
+            if (song == null) {return true;}
+
+            variSong.id = song.id;
+            variSong._data = song._data;
+            variSong._metadata = song._metadata;
+            variSong.difficulties = song.difficulties;
+
+            return false;
+        })) {
             // Fetch the song from the song registry.
             songVALI = SongRegistry.instance.fetchEntry(songId);
             // In order to apply variation injection, we need to clear the difficulties map
@@ -294,8 +309,21 @@ class DiffDefiner extends Module {
      * happen when the game is loaded (before the title screen).
      */
     public override function onCreate(event:ScriptEvent):Void {
-        super.onCreate();
+        super.onCreate(event);
         setup(ModuleHandler.getModule("ud-paths"));
+        FlxG.signals.preStateCreate.add(variSpcficSongScriptInjctr);
+    }
+    
+    public override function onSubStateOpenBegin(event:SubStateScriptEvent):Void {
+        super.onSubStateOpenBegin();
+        variSpcficSongScriptInjctr(event.targetState);
+    }
+
+    function variSpcficSongScriptInjctr(state):Void {
+        trace("Variation Specific Song Script Injector Activated!");
+        if (!Std.isOfType(state, PlayState)) {return;}
+        if (!SongRegistry.instance.hasEntry("UD::"+state.currentSong.id+"::"+state.currentVariation)) {return;}
+        state.currentSong = SongRegistry.instance.fetchEntry("UD::"+state.currentSong.id+"::"+state.currentVariation);
     }
 
     /**
@@ -303,8 +331,8 @@ class DiffDefiner extends Module {
      * variations when the state changes (helps
      * when the game gets reloaded when pressing F5).
      */
-    public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
-        super.onStateChangeEnd();
+    public override function onStateChangeBegin(event:StateChangeScriptEvent):Void {
+        super.onStateChangeEnd(event);
         setup(ModuleHandler.getModule("ud-paths"));
     }
     /**

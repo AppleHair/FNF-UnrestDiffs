@@ -1,6 +1,8 @@
 # Variation-specific song scripts
 
-This directory should contain scripts for existing songs, which will replace the original song scripts when the variation is selected. You don't have to put these scripts here (like all the other scripts, you can technically put these anywhere in your mod's folder), but it's a good idea to keep them in a separate directory to avoid confusion. It's also a great excuse for me to make a README file that explains how this works.
+This directory should contain scripts for existing songs, which will replace the original song scripts when the variation is selected. This can help you replace the default behaviors defined in song scripts with new ones for your own variations of any song without replacing the song scripts themselves.
+
+You don't have to put these scripts here (like all the other scripts, you can technically put these anywhere in your mod's folder), but it's a good practice to keep them in a separate directory to avoid confusion. It's also a great excuse for me to make a README file that explains how this works.
 
 ## Template
 

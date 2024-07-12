@@ -3,5 +3,3 @@ Future Plans:
 Add the ability to make variation specific song scripts
 Add a simplified roses variation-specific script that just changes the red fade beat if the variation is "erect"
 Move the customizable song scripts into a seperate mod and re-write their README to reflect this
-
-Add the ability to make difficulty/variation specific level scripts (low priority)

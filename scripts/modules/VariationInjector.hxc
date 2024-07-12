@@ -54,7 +54,7 @@ class VariationInjector extends Module {
         // Otherwise, add the new variation
         // metadata to the _metadata map.
         entry._metadata.set(variMeta.variation, variMeta);
-        trace('[vari-injector]  -  Successfully injected variation to song '+'('+variId+' => '+songId+')');
+        // trace('[vari-injector]  -  Successfully injected variation to song '+'('+variId+' => '+songId+')');
     }
 
     // Need this because Hscript has dementia
@@ -109,7 +109,7 @@ class VariationInjector extends Module {
      * the state changes (helps when the game gets
      * reloaded when pressing F5).
      */
-    public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
+    public override function onStateChangeBegin(event:StateChangeScriptEvent):Void {
         super.onStateChangeEnd();
         setup(ModuleHandler.getModule("ud-paths"));
     }

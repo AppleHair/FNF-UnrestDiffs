@@ -185,7 +185,7 @@ class AltLevelData extends Module {
      * @param data Provided alt data for the level.
      */
     function addLevelAltDataForVariation(levelId:String, variationId:String, ?data:Dynamic):Void {
-        trace('[alt-level-data]  -  Request received for alt data for level ('+levelId+') on variation ('+variationId+')');
+        // trace('[alt-level-data]  -  Request received for alt data for level ('+levelId+') on variation ('+variationId+')');
 
         // Tries to find the variation's index in the variation definitions.
         var variIndex = ModuleHandler.getModule("diff-definer").scriptGet("variationDefs").indexOf(variationId);
@@ -215,7 +215,7 @@ class AltLevelData extends Module {
             this.addLevelAltDataForDifficulty(levelId, diff, data);
         }
 
-        trace('[alt-level-data]  -  Successfully added alt data for level ('+levelId+') on variation ('+variationId+')');
+        // trace('[alt-level-data]  -  Successfully added alt data for level ('+levelId+') on variation ('+variationId+')');
     }
 
     /**
@@ -228,7 +228,7 @@ class AltLevelData extends Module {
      * @param data Provided alt data for the level.
      */
     function addLevelAltDataForDifficulty(levelId:String, difficultyId:String, ?data:Dynamic):Void {
-        trace('[alt-level-data]  -  Request received for alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
+        // trace('[alt-level-data]  -  Request received for alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
 
         // If the data isn't provided, Try to load it.
         if (data == null) {
@@ -254,7 +254,7 @@ class AltLevelData extends Module {
         this.levelAltData[0].push(difficultyId+levelId);
         this.levelAltData[1].push(data);
 
-        trace('[alt-level-data]  -  Successfully added alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
+        // trace('[alt-level-data]  -  Successfully added alt data for level ('+levelId+') on difficulty ('+difficultyId+')');
     }
 
     // Need these because Hscript has dementia
@@ -334,7 +334,7 @@ class AltLevelData extends Module {
      * when the state changes (helps when the
      * game gets reloaded when pressing F5).
      */
-    public override function onStateChangeEnd(event:StateChangeScriptEvent):Void {
+    public override function onStateChangeBegin(event:StateChangeScriptEvent):Void {
         super.onStateChangeEnd(event);
         setup(ModuleHandler.getModule("ud-paths"));
     }
