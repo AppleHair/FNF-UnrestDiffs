@@ -2,6 +2,7 @@ import flixel.FlxG;
 // import funkin.data.song.SongRegistry;
 import funkin.modding.module.Module;
 import funkin.play.PlayState;
+import funkin.play.song.ScriptedSong;
 import funkin.play.song.Song;
 import funkin.ui.debug.charting.ChartEditorState;
 
@@ -13,21 +14,33 @@ class VariSongScripts extends Module {
 
     var variSongScriptIds:Array<String> = [];
     var variSongScripts:Array<Song> = [];
+    var variSongScriptClasses:Array<String> = [];
 
     public override function onCreate(event:ScriptEvent):Void {
         super.onCreate(event);
-        FlxG.signals.preStateCreate.add(variSpcficSongScriptInjctr);
+        FlxG.signals.preStateCreate.add(function(state):Void {
+            if (!Std.isOfType(state, PlayState)) {return;}
+            if (!variSongScriptIds.contains("UD::"+state.currentSong.id+"::"+state.currentVariation)) {return;}
+            state.currentSong = variSongScripts[variSongScriptIds.indexOf("UD::"+state.currentSong.id+"::"+state.currentVariation)];
+        });
     }
     
     public override function onSubStateOpenBegin(event:SubStateScriptEvent):Void {
         super.onSubStateOpenBegin(event);
         if (!Std.isOfType(FlxG.state, ChartEditorState)) {return;}
         if (!FlxG.state.playtestSongScripts) {return;}
-    }
+        if (!Std.isOfType(event.targetState, PlayState)) {return;}
+        if (!variSongScriptIds.contains("UD::"+event.targetState.currentSong.id+"::"+event.targetState.currentVariation)) {return;}
+        
+        var variSongChartEdit = ScriptedSong.init(
+            variSongScriptClasses[variSongScriptIds.indexOf("UD::"+event.targetState.currentSong.id+"::"+event.targetState.currentVariation)],
+            "unknown"
+        );
+        
+        variSongChartEdit._metadata = event.targetState.currentSong._metadata;
+        variSongChartEdit.difficulties = event.targetState.currentSong.difficulties;
+        variSongChartEdit.validScore = event.targetState.currentSong.validScore;
 
-    function variSpcficSongScriptInjctr(state):Void {
-        if (!Std.isOfType(state, PlayState)) {return;}
-        if (!variSongScriptIds.contains("UD::"+state.currentSong.id+"::"+state.currentVariation)) {return;}
-        state.currentSong = variSongScripts[variSongScriptIds.indexOf("UD::"+state.currentSong.id+"::"+state.currentVariation)];
+        event.targetState.currentSong = variSongChartEdit;
     }
 }

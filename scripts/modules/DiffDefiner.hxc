@@ -208,8 +208,12 @@ class DiffDefiner extends Module {
 
             ModuleHandler.getModule("vari-song-scripts").scriptGet("variSongScripts").push(variSong);
             ModuleHandler.getModule("vari-song-scripts").scriptGet("variSongScriptIds").push(id);
+            ModuleHandler.getModule("vari-song-scripts").scriptGet("variSongScriptClasses").push(
+                SongRegistry.instance.scriptedEntryIds.get(id)
+            );
 
             SongRegistry.instance.entries.remove(id);
+            SongRegistry.instance.scriptedEntryIds.remove(id);
 
             return false;
         })) {
