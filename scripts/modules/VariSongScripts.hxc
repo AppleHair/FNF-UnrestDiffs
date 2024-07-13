@@ -1,0 +1,33 @@
+import flixel.FlxG;
+// import funkin.data.song.SongRegistry;
+import funkin.modding.module.Module;
+import funkin.play.PlayState;
+import funkin.play.song.Song;
+import funkin.ui.debug.charting.ChartEditorState;
+
+class VariSongScripts extends Module {
+
+    function new() {
+        super("vari-song-scripts", 1);
+    }
+
+    var variSongScriptIds:Array<String> = [];
+    var variSongScripts:Array<Song> = [];
+
+    public override function onCreate(event:ScriptEvent):Void {
+        super.onCreate(event);
+        FlxG.signals.preStateCreate.add(variSpcficSongScriptInjctr);
+    }
+    
+    public override function onSubStateOpenBegin(event:SubStateScriptEvent):Void {
+        super.onSubStateOpenBegin(event);
+        if (!Std.isOfType(FlxG.state, ChartEditorState)) {return;}
+        if (!FlxG.state.playtestSongScripts) {return;}
+    }
+
+    function variSpcficSongScriptInjctr(state):Void {
+        if (!Std.isOfType(state, PlayState)) {return;}
+        if (!variSongScriptIds.contains("UD::"+state.currentSong.id+"::"+state.currentVariation)) {return;}
+        state.currentSong = variSongScripts[variSongScriptIds.indexOf("UD::"+state.currentSong.id+"::"+state.currentVariation)];
+    }
+}

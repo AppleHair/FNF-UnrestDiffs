@@ -206,6 +206,11 @@ class DiffDefiner extends Module {
             variSong._metadata = song._metadata;
             variSong.difficulties = song.difficulties;
 
+            ModuleHandler.getModule("vari-song-scripts").scriptGet("variSongScripts").push(variSong);
+            ModuleHandler.getModule("vari-song-scripts").scriptGet("variSongScriptIds").push(id);
+
+            SongRegistry.instance.entries.remove(id);
+
             return false;
         })) {
             // Fetch the song from the song registry.
@@ -311,19 +316,6 @@ class DiffDefiner extends Module {
     public override function onCreate(event:ScriptEvent):Void {
         super.onCreate(event);
         setup(ModuleHandler.getModule("ud-paths"));
-        FlxG.signals.preStateCreate.add(variSpcficSongScriptInjctr);
-    }
-    
-    public override function onSubStateOpenBegin(event:SubStateScriptEvent):Void {
-        super.onSubStateOpenBegin();
-        variSpcficSongScriptInjctr(event.targetState);
-    }
-
-    function variSpcficSongScriptInjctr(state):Void {
-        trace("Variation Specific Song Script Injector Activated!");
-        if (!Std.isOfType(state, PlayState)) {return;}
-        if (!SongRegistry.instance.hasEntry("UD::"+state.currentSong.id+"::"+state.currentVariation)) {return;}
-        state.currentSong = SongRegistry.instance.fetchEntry("UD::"+state.currentSong.id+"::"+state.currentVariation);
     }
 
     /**
