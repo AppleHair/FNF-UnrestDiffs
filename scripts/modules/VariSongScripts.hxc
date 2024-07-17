@@ -9,7 +9,7 @@ import funkin.ui.debug.charting.ChartEditorState;
 class VariSongScripts extends Module {
 
     function new() {
-        super("vari-song-scripts", 1);
+        super("vari-song-scripts", 4);
     }
 
     var variSongScriptIds:Array<String> = [];

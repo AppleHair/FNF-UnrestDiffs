@@ -119,6 +119,19 @@ class StoryDiffs extends Module {
     }
 
     /**
+     * Makes sure the right variation is used when switching to the next song in story mode. 
+     */
+    public override function onCreate(event:ScriptEvent):Void {
+        super.onCreate(event);
+        FlxG.signals.preStateCreate.add(function(state):Void {
+            if (!Std.isOfType(state, PlayState) || !PlayStatePlaylist.isStoryMode) {return;}
+            if (state.currentSong == null) {return;}
+            
+            state.currentVariation = state.currentSong.getFirstValidVariation(PlayStatePlaylist.campaignDifficulty);
+        });
+    }
+
+    /**
      * Handles difficulty changes from pause menu when in story mode.
      * Makes sure that when playing on story mode, the last remembered
      * difficulty in the story mode menu will match the difficulty which
