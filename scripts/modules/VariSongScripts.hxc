@@ -1,10 +1,11 @@
 import flixel.FlxG;
-// import funkin.data.song.SongRegistry;
+import funkin.data.song.SongRegistry;
 import funkin.modding.module.Module;
 import funkin.play.PlayState;
 import funkin.play.song.ScriptedSong;
 import funkin.play.song.Song;
 import funkin.ui.debug.charting.ChartEditorState;
+import funkin.util.tools.StringTools;
 
 class VariSongScripts extends Module {
 
@@ -30,12 +31,14 @@ class VariSongScripts extends Module {
         if (!Std.isOfType(FlxG.state, ChartEditorState)) {return;}
         if (!FlxG.state.playtestSongScripts) {return;}
         if (!Std.isOfType(event.targetState, PlayState)) {return;}
-        if (!variSongScriptIds.contains("UD::"+event.targetState.currentSong.id+"::"+event.targetState.currentVariation)) {return;}
+        var curSongId = StringTools.sanitize(StringTools.toLowerKebabCase(FlxG.state.songMetadata.get("default").songName));
+        var className = SongRegistry.instance.getScriptedEntryClassName(curSongId);
+        if (variSongScriptIds.contains("UD::"+curSongId+"::"+event.targetState.currentVariation)) {
+            className = variSongScriptClasses[variSongScriptIds.indexOf("UD::"+curSongId+"::"+event.targetState.currentVariation)];
+        }
+        if (className == null) {return;}
         
-        var variSongChartEdit = ScriptedSong.init(
-            variSongScriptClasses[variSongScriptIds.indexOf("UD::"+event.targetState.currentSong.id+"::"+event.targetState.currentVariation)],
-            "unknown"
-        );
+        var variSongChartEdit = ScriptedSong.init(className,"unknown");
         
         variSongChartEdit._metadata = event.targetState.currentSong._metadata;
         variSongChartEdit.difficulties = event.targetState.currentSong.difficulties;
