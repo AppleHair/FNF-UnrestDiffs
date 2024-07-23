@@ -18,10 +18,10 @@ class UDMySongMyVariation extends Song {
         // so that the object will be constructed properly as a copy
         // of the original song.
         super("my-song");
-        // However, after the super constructor finishes, we can
-        // change the ID to something else to make sure that the
-        // `SongRegistry` doesn't overwrite the original song with
-        // this variation.
+        // However, after the super constructor finishes, we
+        // need to change the ID to something else to make sure
+        // the `SongRegistry` doesn't overwrite the original song
+        // with this variation.
 
         // Make sure you always use this format for the final ID,
         // because the framework relies on it to identify your script.

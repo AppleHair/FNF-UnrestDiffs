@@ -1,6 +1,5 @@
 Future Plans:
 
-Move the customizable song scripts into a seperate mod and re-write their README to reflect this
 Try to remember if there's anything else I wanted to change in this update
 Add TODO comments to code I should change if my PRs get accepted for the next FNF update
 Fix part in main README where I wrote about difficulty display name trimming
