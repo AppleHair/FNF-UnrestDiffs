@@ -126,6 +126,7 @@ class StoryDiffs extends Module {
         FlxG.signals.preStateCreate.add(function(state):Void {
             if (!Std.isOfType(state, PlayState) || !PlayStatePlaylist.isStoryMode) {return;}
             if (state.currentSong == null) {return;}
+            if (state.currentSong.hasDifficulty(PlayStatePlaylist.campaignDifficulty, state.currentVariation)) {return;}
             
             state.currentVariation = state.currentSong.getFirstValidVariation(PlayStatePlaylist.campaignDifficulty);
         });

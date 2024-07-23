@@ -1,10 +1,9 @@
 Future Plans:
 
-Add a simplified roses variation-specific script that just changes the red fade beat if the variation is "erect"
 Move the customizable song scripts into a seperate mod and re-write their README to reflect this
+Try to remember if there's anything else I wanted to change in this update
+Add TODO comments to code I should change if my PRs get accepted for the next FNF update
+Fix part in main README where I wrote about difficulty display name trimming
 Fix bug in story mode with difficulty bounding
 Try to use StringMaps more in the code
-Fix part in main README where I wrote about difficulty display name trimming
-Add TODO comments to code I should change if my PRs get accepted for the next FNF update
-Try to remember if there's anything else I wanted to change in this update
 Add stuff for the next update to the todo list
