@@ -34,5 +34,15 @@ class UDMySongMyVariation extends Song {
     // Just keep in mind that this is a completely separate script
     // from the original song script, so you can't rely on any of
     // the original song's functionality unless you copy it over.
+
+    public override function onScriptEvent(event:ScriptEvent):Void {
+        super.onScriptEvent(event);
+        if (event.type == "UD_VARI_SONG_INIT") {
+            // You can also use this callback if you want.
+            // This gets called after the framework identifies
+            // this song as a variation-specific song script,
+            // and shares all of the song's data with it.
+        }
+    }
 }
 ```

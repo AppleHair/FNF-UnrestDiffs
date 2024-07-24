@@ -1,5 +1,7 @@
 import flixel.FlxG;
 import funkin.data.song.SongRegistry;
+import funkin.modding.events.ScriptEvent;
+import funkin.modding.events.ScriptEventDispatcher;
 import funkin.modding.module.Module;
 import funkin.modding.module.ModuleHandler;
 import funkin.modding.PolymodErrorHandler;
@@ -214,6 +216,8 @@ class DiffDefiner extends Module {
 
             SongRegistry.instance.entries.remove(id);
             SongRegistry.instance.scriptedEntryIds.remove(id);
+
+            ScriptEventDispatcher.callEvent(variSong, new ScriptEvent("UD_VARI_SONG_INIT"));
 
             return false;
         })) {
