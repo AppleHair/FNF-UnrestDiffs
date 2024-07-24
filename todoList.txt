@@ -1,8 +1,8 @@
 Future Plans:
 
-Try to remember if there's anything else I wanted to change in this update
+Add comments to everything I added in the code
 Add TODO comments to code I should change if my PRs get accepted for the next FNF update
 Fix part in main README where I wrote about difficulty display name trimming
-Fix bug in story mode with difficulty bounding
-Try to use StringMaps more in the code
+Replace the explanation about customizable song script in the main README with explanation on variation specific song scripts
 Add stuff for the next update to the todo list
+Try to use StringMaps more in the code (low priority)

@@ -464,7 +464,6 @@ class StoryDiffs extends Module {
         
         // If the difficulty list is the same as the last one, nothing should be done.
         if (ArrayTools.isEqualUnordered(curDifficultyList, this.lastDifficultyList)) {return;}
-        // trace(curDifficultyList);
 
         // Try to find the current difficulty in the current difficulty list.
         var newIndex:Int = curDifficultyList.indexOf(this.lastRememberedDifficulty);
@@ -476,13 +475,17 @@ class StoryDiffs extends Module {
             this.difficultyChanged = true;
             newIndex = this.lastDifficultyList.indexOf(this.lastRememberedDifficulty);
             if (newIndex == -1) {newIndex = 0;}
-            newIndex = (newIndex / (this.lastDifficultyList.length-1)) * (curDifficultyList.length-1);
+            if (this.lastDifficultyList.length > 1) {
+                newIndex = (newIndex / (this.lastDifficultyList.length-1)) * (curDifficultyList.length-1);
+            }
         }
 
         // Make the current difficulty list the last difficulty list.
         this.lastDifficultyList = curDifficultyList;
+        // trace(this.lastDifficultyList);
         // Update the current difficulty accordingly.
         this.storyMenu.currentDifficultyId = this.lastDifficultyList[newIndex];
+        // trace("bounding: "+this.storyMenu.currentDifficultyId);
         StoryMenuState.rememberedDifficulty = this.storyMenu.currentDifficultyId;
         this.lastRememberedDifficulty = StoryMenuState.rememberedDifficulty;
     }
@@ -521,6 +524,7 @@ class StoryDiffs extends Module {
 
         // Update the current difficulty accordingly.
         this.storyMenu.currentDifficultyId = this.lastDifficultyList[currentIndex];
+        // trace("forcing: "+this.storyMenu.currentDifficultyId);
         StoryMenuState.rememberedDifficulty = this.storyMenu.currentDifficultyId;
         this.lastRememberedDifficulty = StoryMenuState.rememberedDifficulty;
     }
