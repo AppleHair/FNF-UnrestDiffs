@@ -123,6 +123,7 @@ class StoryDiffs extends Module {
      */
     public override function onCreate(event:ScriptEvent):Void {
         super.onCreate(event);
+        // TODO: Remove this if my fix gets accepted
         FlxG.signals.preStateCreate.add(function(state):Void {
             if (!Std.isOfType(state, PlayState) || !PlayStatePlaylist.isStoryMode) {return;}
             if (state.currentSong == null) {return;}

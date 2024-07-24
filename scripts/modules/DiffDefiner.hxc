@@ -192,33 +192,44 @@ class DiffDefiner extends Module {
      * 
      * Another thing this function does is that it makes sure all the
      * difficulties that were added from the variation injections are
-     * added to the song's difficulties map.
+     * added to the song's difficulties map. It also identifies and
+     * sets up the variation-specific song scripts.
      */
     function validateDifficulties():Void {
         // Iterate through all the song IDs in the game.
         for (songId in SongRegistry.instance.listEntryIds().filter(function(id:String):Bool {
             if (!StringTools.startsWith(id, "UD::")) {return true;}
+            // for all of the variation-specific song scripts,
+            // do this instead of the normal process.
 
+            // Fetch the variation-specific song script and
+            // the original song from the song registry.
             var variSong = SongRegistry.instance.fetchEntry(id);
             var song = SongRegistry.instance.fetchEntry(id.split("::")[1]);
             if (song == null) {return true;}
 
+            // Share the song's data with the
+            // variation-specific song script.
             variSong.id = song.id;
             variSong._data = song._data;
             variSong._metadata = song._metadata;
             variSong.difficulties = song.difficulties;
 
+            // Add the variation-specific song script to all of
+            // the related arrays in the `vari-song-scripts` module.
             ModuleHandler.getModule("vari-song-scripts").scriptGet("variSongScripts").push(variSong);
             ModuleHandler.getModule("vari-song-scripts").scriptGet("variSongScriptIds").push(id);
             ModuleHandler.getModule("vari-song-scripts").scriptGet("variSongScriptClasses").push(
                 SongRegistry.instance.scriptedEntryIds.get(id)
             );
-
+            
+            // Remove the song from the song registry.
             SongRegistry.instance.entries.remove(id);
             SongRegistry.instance.scriptedEntryIds.remove(id);
 
+            // Call the `UD_VARI_SONG_INIT` event on the variation-specific song script.
             ScriptEventDispatcher.callEvent(variSong, new ScriptEvent("UD_VARI_SONG_INIT"));
-
+            
             return false;
         })) {
             // Fetch the song from the song registry.

@@ -7,20 +7,64 @@ import funkin.play.song.Song;
 import funkin.ui.debug.charting.ChartEditorState;
 import funkin.util.tools.StringTools;
 
+/**
+ * This module is responsible for making sure
+ * variation-specific song scripts are loaded
+ * on PlayState creation (for both normal play,
+ * and the chart editor's play test).
+ * 
+ * It also fixes a bug in the chart editor where
+ * the song script won't load on play test if the
+ * variation is not the default one.
+ * TODO: Remove this bug fix if the PR I made that
+ * fixes this bug gets accepted.
+ */
 class VariSongScripts extends Module {
 
     function new() {
         super("vari-song-scripts", 4);
     }
 
-    var variSongScriptIds:Array<String> = [];
+    // YOU SHOULD NOT MODIFY THE FOLLOWING VALUES DIRECTLY!!!
+    // You are only allowed to read from them if you really need to,
+    // and you should remember that arrays get passed by reference,
+    // so if you assign an array to another variable, you will need
+    // to use the .copy() method to avoid modifying the original + if
+    // the array is nested, you will need to use the .map() method to
+    // copy the nested arrays as well.
+
+    /**
+     * Contains all the variation-specific song scripts
+     */
     var variSongScripts:Array<Song> = [];
+    /**
+     * Contains all the variation-specific song script
+     * IDs in the same order as `variSongScripts`.
+     * They all should have the following format:
+     * UD::<songId>::<variation>
+     */
+    var variSongScriptIds:Array<String> = [];
+    /**
+     * Contains all the variation-specific song script
+     * class names in the same order as `variSongScripts`.
+     */
     var variSongScriptClasses:Array<String> = [];
+    // All of the previous arrays get filled by the
+    // `diff-definer` module on the `validateDifficulties`
+    // method.
 
     public override function onCreate(event:ScriptEvent):Void {
         super.onCreate(event);
+        // Add a Listener to the preStateCreate signal,
+        // which is called before a state's `create`
+        // method gets called, with the state itself
+        // as an argument.
         FlxG.signals.preStateCreate.add(function(state):Void {
+            // Make sure the state is a PlayState
             if (!Std.isOfType(state, PlayState)) {return;}
+            // Replace the current song script with the
+            // variation-specific song script according
+            // to the current variation if it exists.
             if (!variSongScriptIds.contains("UD::"+state.currentSong.id+"::"+state.currentVariation)) {return;}
             state.currentSong = variSongScripts[variSongScriptIds.indexOf("UD::"+state.currentSong.id+"::"+state.currentVariation)];
         });
@@ -28,22 +72,32 @@ class VariSongScripts extends Module {
     
     public override function onSubStateOpenBegin(event:SubStateScriptEvent):Void {
         super.onSubStateOpenBegin(event);
+        // Make sure the current state is the ChartEditorState
         if (!Std.isOfType(FlxG.state, ChartEditorState)) {return;}
+        // Make sure song scripts are enabled for playtesting
         if (!FlxG.state.playtestSongScripts) {return;}
+        // Make sure the target substate is a PlayState
         if (!Std.isOfType(event.targetState, PlayState)) {return;}
+        // Use the default song name to infer the current song ID
         var curSongId = StringTools.sanitize(StringTools.toLowerKebabCase(FlxG.state.songMetadata.get("default").songName));
+        // Use it to get the current song script class name
         var className = SongRegistry.instance.getScriptedEntryClassName(curSongId);
+        // If this song has a variation-specific song script
+        // for the current variation, get it's class name instead
         if (variSongScriptIds.contains("UD::"+curSongId+"::"+event.targetState.currentVariation)) {
             className = variSongScriptClasses[variSongScriptIds.indexOf("UD::"+curSongId+"::"+event.targetState.currentVariation)];
         }
         if (className == null) {return;}
         
+        // Create a new instance of the variation-specific song script
         var variSongChartEdit = ScriptedSong.init(className,"unknown");
         
+        // Replace it's data with data from the chart editor
         variSongChartEdit._metadata = event.targetState.currentSong._metadata;
         variSongChartEdit.difficulties = event.targetState.currentSong.difficulties;
         variSongChartEdit.validScore = event.targetState.currentSong.validScore;
 
+        // Replace the current song with the scripted song / variation-specific song script
         event.targetState.currentSong = variSongChartEdit;
     }
 }
