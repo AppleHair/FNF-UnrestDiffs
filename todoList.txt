@@ -6,3 +6,5 @@ I officially ran out of good ideas for stuff to add to this framework,
 so I think I'm going to work on other projects for a while. I'll still
 maintain this project, so if you find any bugs, feel free to report them
 in this repository's issues tab. I'll try to fix them as soon as I can.
+I'll also be happy to review PRs if anyone has anything good to add to
+this framework.
