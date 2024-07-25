@@ -1,7 +1,5 @@
 Future Plans:
 
-Fix part in main README where I wrote about difficulty display name trimming
-Replace the explanation about customizable song script in the main README with explanation on variation specific song scripts
-REMEMBER TO CHANGE THE VERSION NUMBER AND ADD THE NEW EXTENSION TO THE GAMEBANANA PAGE!!!
 Add stuff for the next update to the todo list
+REMEMBER TO ADD THE NEW EXTENSION TO THE GAMEBANANA PAGE!!!
 Try to use StringMaps more in the code (low priority)
