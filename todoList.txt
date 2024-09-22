@@ -6,6 +6,7 @@ Mark variation injection as deprecated and give an example of how to do the same
 Make the difficulty validator in DiffDefiner aware of the character selection in freeplay using the logic from the char-stuff branch plus and extra function to get the "player" name.
 Make the rest of the code aware of the character selection where I wrote TODO.
 Fix all the other bugs and make sure everything is working as expected.
+Update READMEs
 
 Future Plans:
 
