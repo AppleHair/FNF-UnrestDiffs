@@ -119,21 +119,6 @@ class StoryDiffs extends Module {
     }
 
     /**
-     * Makes sure the right variation is used when switching to the next song in story mode. 
-     */
-    public override function onCreate(event:ScriptEvent):Void {
-        super.onCreate(event);
-        // TODO: Remove this if my fix gets accepted
-        FlxG.signals.preStateCreate.add(function(state):Void {
-            if (!Std.isOfType(state, PlayState) || !PlayStatePlaylist.isStoryMode) {return;}
-            if (state.currentSong == null) {return;}
-            if (state.currentSong.hasDifficulty(PlayStatePlaylist.campaignDifficulty, state.currentVariation)) {return;}
-            
-            state.currentVariation = state.currentSong.getFirstValidVariation(PlayStatePlaylist.campaignDifficulty);
-        });
-    }
-
-    /**
      * Handles difficulty changes from pause menu when in story mode.
      * Makes sure that when playing on story mode, the last remembered
      * difficulty in the story mode menu will match the difficulty which
@@ -175,8 +160,7 @@ class StoryDiffs extends Module {
                 // If the song doesn't have the  
                 // current difficulty, filter it out.
                 var song = SongRegistry.instance.fetchEntry(songId);
-                // TODO: Check for the current character when it will be possible.
-                return song.getDifficulty(difficulty, null, song.getVariationsByCharId(Constants.DEFAULT_CHARACTER)) != null;
+                return song.getDifficulty(difficulty, null, song.variations) != null;
             }
         );
 
@@ -216,8 +200,7 @@ class StoryDiffs extends Module {
             // Iterate through the
             // difficulties of the song
             // (non-hidden difficulties)
-            // TODO: Check for the current character when it will be possible.
-            for (diff in song.listDifficulties(null, song.getVariationsByCharId(Constants.DEFAULT_CHARACTER), true, false)) {
+            for (diff in song.listDifficulties(null, song.variations, true, false)) {
                 // Push the difficulty to the
                 // difficulties array if it's not
                 // already there
@@ -287,8 +270,7 @@ class StoryDiffs extends Module {
                 if (song == null) {return 'Unknown';}
                 // Get the first variation of the song
                 // which is associated with the provided difficulty.
-                // TODO: Check for the current character when it will be possible.
-                var vari = song.getFirstValidVariation(difficulty, song.getVariationsByCharId(Constants.DEFAULT_CHARACTER));
+                var vari = song.getFirstValidVariation(difficulty, song.variations);
                 // If null is returned, the song doesn't have
                 // the provided difficulty, and should be removed
                 // from the list.
@@ -397,9 +379,8 @@ class StoryDiffs extends Module {
                     var targetSong = SongRegistry.instance.fetchEntry(PlayStatePlaylist.playlistSongIds.shift());
                     
                     // Get the target variation according to the selected difficulty.
-                    // TODO: Check for the current character when it will be possible.
                     var targetVariation:String = targetSong.getFirstValidVariation(PlayStatePlaylist.campaignDifficulty,
-                        targetSong.getVariationsByCharId(Constants.DEFAULT_CHARACTER));
+                        targetSong.variations);
                     
                     // Load PlayState with the first song in the level
                     LoadingState.loadPlayState({
