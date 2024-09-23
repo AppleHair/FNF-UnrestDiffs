@@ -5,7 +5,6 @@ Mark variation injection as deprecated and give an example of how to do the same
 Make the difficulty validator in DiffDefiner aware of the character selection in freeplay using the logic from the char-stuff branch plus and extra function to get the "player" name.
 Make StoryDiffs check for the scroll wheel when overriding scroll behavior.
 Fix all the other bugs and make sure everything is working as expected.
-Update Customizable Song Scripts with all the latest changes.
 Update READMEs.
 
 Future Plans:
