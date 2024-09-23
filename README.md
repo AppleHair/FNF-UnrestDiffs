@@ -26,4 +26,4 @@ The framework includes the following features:
 
 ## Extension: Customizable song scripts
 
-Adds special attributes to all of the song scripts, which you can set using `scriptSet` on `onCountdownStart` through a module, as opposed to overriding the scripts, to customize the script's default behavior (which includes cutscenes and more song-specific stuff). This was deprecated in favor of variation-specific song scripts, but was kept as an extension for compatibility with mods that use it. The extension download can be found on the [gamebanana page](https://gamebanana.com/mods/512797).
+Adds special attributes to all of the song scripts, which you can set using `scriptSet` on `onCountdownStart` through a module, as opposed to overriding the scripts, to customize the script's default behavior (which includes cutscenes and more song-specific stuff). This was deprecated in favor of variation-specific song scripts, but was kept as an extension for compatibility with mods that use it. The extension can be found on its [dedicated repo](https://github.com/AppleHair/UD-CustomSongScripts).
