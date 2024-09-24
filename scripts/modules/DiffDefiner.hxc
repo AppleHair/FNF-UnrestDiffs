@@ -10,6 +10,7 @@ import funkin.play.PlayState;
 import funkin.play.song.Song;
 import funkin.ui.freeplay.FreeplayState;
 import funkin.util.Constants;
+import funkin.util.SortUtil;
 import funkin.util.tools.ArrayTools;
 import haxe.ds.ArraySort;
 import Int;
@@ -56,8 +57,8 @@ class DiffDefiner extends Module {
      * Stores the variation names and their difficulty indices.
      * The indices are used to assign difficulties to variations.
      */
-    var variationDefs:Array<String> = ["default","erect"];
-    var diffIndicesByVari:Array<Array<Int>> = [[0,1,2],[3,4]];
+    var variationDefs:Array<String> = ["default","erect"/*, "pico", "bf"*/];
+    var diffIndicesByVari:Array<Array<Int>> = [[0,1,2],[3,4]/*, [0,1,2], [0,1,2]*/];
 
     /**
      * Used for tracking setup completion.
@@ -67,6 +68,9 @@ class DiffDefiner extends Module {
     /**
      * This function sorts the difficulties by their prioritys.
      * it is used as a callback for the ArraySort.sort() method.
+     * @param a a member of the sorted array
+     * @param b another member of the sorted array
+     * @return Int
      */
     function sortDifficulties(a:String, b:String):Int {
         // Get the prioritys of the difficulties
@@ -89,6 +93,31 @@ class DiffDefiner extends Module {
         // stay in the order they came in.
         return 0;
     }
+
+    /**
+     * This function sorts the variations by their default order.
+     * it is used as a callback for the ArraySort.sort() method.
+     * @param a a member of the sorted array
+     * @param b another member of the sorted array
+     * @return Int
+     */
+    function sortVariations(a:String, b:String):Int {
+        // Hscript doesn't want to use bind, so I made this...
+        return SortUtil.defaultsThenAlphabetically(Constants.DEFAULT_VARIATION_LIST, a, b);
+    }
+
+    /**
+     * This function sorts the difficulties by their default order.
+     * it is used as a callback for the ArraySort.sort() method.
+     * @param a a member of the sorted array
+     * @param b another member of the sorted array
+     * @return Int
+     */
+     function sortDifficultiesForced(a:String, b:String):Int {
+        // Hscript doesn't want to use bind, so I made this...
+        return SortUtil.defaultsThenAlphabetically(Constants.DEFAULT_DIFFICULTY_LIST, a, b);
+    }
+
     /**
      * This function checks if a definition file exists,
      * and if it does, it reads the file and calls the
@@ -147,7 +176,11 @@ class DiffDefiner extends Module {
         }
         // If the difficulty is already defined, just assign it to the provided variation.
         if (this.difficultyDefs[0].contains(diffId)) {
-            this.diffIndicesByVari[variIndex].push(this.difficultyDefs[0].indexOf(diffId));
+            var diffIndex:Int = this.difficultyDefs[0].indexOf(diffId);
+            // If the difficulty is already assigned to the provided variation, do nothing.
+            if (!this.diffIndicesByVari[variIndex].contains(diffIndex)) {
+                this.diffIndicesByVari[variIndex].push(diffIndex);
+            }
             return;
         }
         // Otherwise, define the difficulty and assign it to the provided variation.
@@ -169,6 +202,7 @@ class DiffDefiner extends Module {
     var forRemovalDiffVALI:Array<String>;
     var songVALI:Song;
     var trackedDifficultiesVALI:Array<Array<String>>;
+    var songVariationsVALI:Array<String>;
     /**
      * This function makes sure a song doesn't have any
      * conflicting difficulties between variations. It also
@@ -242,7 +276,9 @@ class DiffDefiner extends Module {
             // Reset the tracked difficulties array.
             trackedDifficultiesVALI = [[],[]];
             // Iterate through all the variations in the song.
-            for (vari in songVALI.variations) {
+            songVariationsVALI = songVALI.variations;
+            ArraySort.sort(songVariationsVALI, sortVariations);
+            for (vari in songVariationsVALI) {
                 // Reset the array of difficulties for removal.
                 forRemovalDiffVALI = [];
                 // Make sure the variation is defined.
@@ -349,12 +385,13 @@ class DiffDefiner extends Module {
     /**
      * Get the freeplay menu instance after it's opened
      * and sort the difficulties in diffIdsTotal by their
-     * prioritys (makes sorting work in "Random").
+     * default order after it was influenced by their prioritys
+     * (makes sorting work in "Random").
      */
     public override function onSubStateOpenEnd(event:SubStateScriptEvent):Void {
         super.onSubStateOpenEnd();
         if (Std.isOfType(event.targetState, FreeplayState)) {
-            ArraySort.sort(event.targetState.diffIdsTotal,sortDifficulties);
+            ArraySort.sort(event.targetState.diffIdsTotal, sortDifficultiesForced);
         }
     }
 }
