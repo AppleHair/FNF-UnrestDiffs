@@ -50,8 +50,7 @@ class VariSongScripts extends Module {
      */
     var variSongScriptClasses:Array<String> = [];
     // All of the previous arrays get filled by the
-    // `diff-definer` module on the `validateDifficulties`
-    // method.
+    // `diff-definer` module on the `defineAll` method.
 
     public override function onCreate(event:ScriptEvent):Void {
         super.onCreate(event);

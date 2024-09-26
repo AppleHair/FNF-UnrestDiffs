@@ -161,7 +161,7 @@ class DiffDefiner extends Module {
         // If the variation ID is not provided.
         if (variId == null && !this.difficultyDefs[0].contains(diffId)) {
             // Add the difficulty without assigning it to a variation.
-            // It will be assigned to a variation when the validateDifficulties()
+            // It will be assigned to a variation when the defineAll()
             // function comes across this difficulty in a song.
             this.difficultyDefs[0].push(diffId);
             this.difficultyDefs[1].push(priority.split(".")[0]);
@@ -190,10 +190,10 @@ class DiffDefiner extends Module {
         this.diffIndicesByVari[variIndex].push(this.difficultyDefs[0].length-1);
     }
 
-    // These variables are used inside the validateDifficulties() function.
+    // These variables are used inside the defineAll() function.
     // They don't have any effect anywhere else. You can even try to change
     // their values, but it won't have any effect on the game, because they
-    // are only used inside the validateDifficulties() function, and it always
+    // are only used inside the defineAll() function, and it always
     // resets them at the start of the function, so just ignore them.
     // The reason why I don't define them inside the function is because
     // for some reason, the interpreter forgets the variables when I do that.
@@ -204,32 +204,37 @@ class DiffDefiner extends Module {
     var trackedDifficultiesVALI:Array<Array<String>>;
     var songVariationsVALI:Array<String>;
     /**
-     * This function makes sure a song doesn't have any
-     * conflicting difficulties between variations. It also
-     * adds definisions for all of the difficulties and variations
-     * in the game. This gets called after the difficulty definitions
-     * file has been read and the difficulties have been added.
-     * 
-     * Difficulties and variations MUST have a One-to-many
-     * relationship per-song, meaning that in every song,
-     * a variation can have many difficulties, but a difficulty
-     * can only have ONE variation.
-     * 
-     * This rule applies to all difficulties, except
-     * for hidden ones (like "picospeaker") which exist
-     * only in the chart files, and are not shown in game.
-     * 
-     * In the future, this rule will also be checked per-character,
-     * meaning that a difficulty can have a different variation on a
-     * different character in the song, but this feature is not
-     * implemented yet in the base game.
+     * This function adds definisions for all of the difficulties and
+     * variations in the game. This gets called after the difficulty
+     * definitions file has been read and the pre-defined difficulties
+     * have been added.
      * 
      * Another thing this function does is that it makes sure all the
      * difficulties that were added from the variation injections are
      * added to the song's difficulties map. It also identifies and
      * sets up the variation-specific song scripts.
+     * 
+     * Difficulties and variations MUST have a One-to-many
+     * relationship per-character, meaning that in every song,
+     * a variation can have many difficulties, but a difficulty
+     * can only have ONE variation in each of the playable character's
+     * menus in freeplay. This rule applies to all difficulties,
+     * except for hidden ones (like "picospeaker") which exist
+     * only in the chart files, and are not shown in-game.
+     * 
+     * On previous versions of this module (before 1.2.0), these rules
+     * were checked and enforced by the module, but since playable characters
+     * in freeplay were introduced in the base game (version 0.5.0), I decided
+     * to remove the enforcement of these rules, because the way the seperation
+     * of variations between playable characters is handled in the game makes
+     * it difficult to check these rules in an efficient manner, which makes
+     * the enforcement of these rules not worth the effort in my opinion.However,
+     * The systems in this framework (and the base game) premise that all of
+     * the songs in the game follow these rules, so if a song's difficulties
+     * don't follow these rules, conflicts between difficulties will be created
+     * and the game will not work as expected.
      */
-    function validateDifficulties():Void {
+    function defineAll():Void {
         // Iterate through all the song IDs in the game.
         for (songId in SongRegistry.instance.listEntryIds().filter(function(id:String):Bool {
             if (!StringTools.startsWith(id, "UD::")) {return true;}
@@ -273,54 +278,22 @@ class DiffDefiner extends Module {
             // variations get added to the song's difficulties map.
             songVALI.difficulties.clear();
             songVALI.populateDifficulties();
-            // Reset the tracked difficulties array.
-            trackedDifficultiesVALI = [[],[]];
             // Iterate through all the variations in the song.
             songVariationsVALI = songVALI.variations;
             ArraySort.sort(songVariationsVALI, sortVariations);
             for (vari in songVariationsVALI) {
-                // Reset the array of difficulties for removal.
-                forRemovalDiffVALI = [];
                 // Make sure the variation is defined.
                 defineVariation(vari);
                 // Iterate through all the difficulties in the variation.
                 for (diff in songVALI._metadata.get(vari).playData.difficulties) {
-                    // If the difficulty is already tracked, it means there might be a conflict.
-                    if (trackedDifficultiesVALI[0].contains(diff)) {
-                        // if the difficulty is tracked with a different variation
-                        // than the one we are trying to add it to, then there must be a conflict.
-                        // TODO: Make this check consider character selection when it's implemented
-                        if (trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)] != vari) {
-                            // Show an error message and add the difficulty to the removal list.
-                            var realVari:String = trackedDifficultiesVALI[1][trackedDifficultiesVALI[0].indexOf(diff)];
-                            PolymodErrorHandler.showAlert("Variation-Difficulty Relationship Error", "Tried to add"+
-                                " the difficulty \""+diff+"\" to the variation \""+vari+"\" in the song \""+songVALI.id+"\","+
-                                " but the difficulty already had the \""+realVari+"\" variation assigned to it in this song.");
-                            forRemovalDiffVALI.push(diff);
-                        }
-                        continue;
-                    }
                     // Make sure the difficulty is defined
                     // and assign it to the variation.
                     defineDifficulty(diff, "", "", vari);
-                    // Track the difficulty and its variation.
-                    trackedDifficultiesVALI[0].push(diff);
-                    trackedDifficultiesVALI[1].push(vari);
-                    // trackedDifficultiesVALI[2].push(charId);
-                }
-                // Remove the difficulties that had conflicts.
-                // (This will only hide them from the menus,
-                // they will still exist in the chart files
-                // and in the song's difficulties map.)
-                for (diff in forRemovalDiffVALI) {
-                    songVALI._metadata.get(vari).playData.difficulties.remove(diff);
                 }
             }
         }
         // Free the variables that were used in the function.
         songVALI = null;
-        forRemovalDiffVALI = null;
-        trackedDifficultiesVALI = null;
     }
 
     function setup(UDPaths:Module):Void {
@@ -344,11 +317,9 @@ class DiffDefiner extends Module {
             defineDifficulty(res[0], res[1], res[2]);
         });
 
-        // Make sure there are no conflicts in difficulties
-        // between variations in the game, and make sure all
-        // the difficulties and variations in the game are defined.
+        // Make sure all the difficulties and variations in the game are defined.
         // see this function's description for more info.
-        validateDifficulties();
+        defineAll();
 
         // Ok ok I know what you're thinking, I am not supposed to
         // edit a constant value, but I MUST do this in order to make
