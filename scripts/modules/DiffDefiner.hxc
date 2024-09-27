@@ -199,10 +199,8 @@ class DiffDefiner extends Module {
     // for some reason, the interpreter forgets the variables when I do that.
     // It sounds stupid but it's true. you can check me if you want.
     // I don't know why it happens.
-    var forRemovalDiffVALI:Array<String>;
-    var songVALI:Song;
-    var trackedDifficultiesVALI:Array<Array<String>>;
-    var songVariationsVALI:Array<String>;
+    var songDEFALL:Song;
+    var songVariationsDEFALL:Array<String>;
     /**
      * This function adds definisions for all of the difficulties and
      * variations in the game. This gets called after the difficulty
@@ -272,20 +270,20 @@ class DiffDefiner extends Module {
             return false;
         })) {
             // Fetch the song from the song registry.
-            songVALI = SongRegistry.instance.fetchEntry(songId);
+            songDEFALL = SongRegistry.instance.fetchEntry(songId);
             // In order to apply variation injection, we need to clear the difficulties map
             // and re-populate the difficulties, so that the difficulties from the injected 
             // variations get added to the song's difficulties map.
-            songVALI.difficulties.clear();
-            songVALI.populateDifficulties();
+            songDEFALL.difficulties.clear();
+            songDEFALL.populateDifficulties();
             // Iterate through all the variations in the song.
-            songVariationsVALI = songVALI.variations;
-            ArraySort.sort(songVariationsVALI, sortVariations);
-            for (vari in songVariationsVALI) {
+            songVariationsDEFALL = songDEFALL.variations;
+            ArraySort.sort(songVariationsDEFALL, sortVariations);
+            for (vari in songVariationsDEFALL) {
                 // Make sure the variation is defined.
                 defineVariation(vari);
                 // Iterate through all the difficulties in the variation.
-                for (diff in songVALI._metadata.get(vari).playData.difficulties) {
+                for (diff in songDEFALL._metadata.get(vari).playData.difficulties) {
                     // Make sure the difficulty is defined
                     // and assign it to the variation.
                     defineDifficulty(diff, "", "", vari);
@@ -293,7 +291,7 @@ class DiffDefiner extends Module {
             }
         }
         // Free the variables that were used in the function.
-        songVALI = null;
+        songDEFALL = null;
     }
 
     function setup(UDPaths:Module):Void {

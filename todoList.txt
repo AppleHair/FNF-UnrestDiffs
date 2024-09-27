@@ -1,8 +1,6 @@
 
 1.2.0:
 
-Make the difficulty validator in DiffDefiner aware of the character selection in freeplay using the logic from the char-stuff branch plus and extra function to get the "player" name.
-Fix all the other bugs and make sure everything is working as expected.
 Update READMEs.
 Mark variation injection as deprecated and give an example of how to do the same thing using JSON Patch in FNF 0.5.0.
 Add download instructions to the main README and to the extension's README.
