@@ -1,5 +1,24 @@
 # Variation Injection
 
+In the new playable pico update to the base game (0.5.0), a new merge logic for JSON files was introduced, which allows you to inject changes into existing JSON files without replacing them, but in a much more flexable way than was previously possible. One of the new things you can do with the new JSON Patch merge logic is add members to existing arrays in a JSON file. This means that the variation injection system in this framework is now deprecated, and you should use the new JSON Patch merge logic to inject your variations into existing songs. You can keep reading if you want to know how to use this new feature for variation injection, but if you want to know more about using JSON Patch merge logic, you can check out the [Merging into JSON Files](https://funkincrew.github.io/funkin-modding-docs/10-appending-and-merging-files/10-02-merging-files.html#merging-into-json-files) section in the Friday Night Funkin' Modding Documentation.
+
+## How to do variation injection the OFFICIAL way using JSON Patch merge logic
+
+This method uses merge logic, so you'll need to create a `_merge` folder in your mod's root folder, and from there, you can create a folder structure that matches the structure of the file you want to inject your variation into. So if you want to inject your variation into the metadata file of a song, you'll need to create a folder structure that matches the structure of the metadata file, which is `data/songs/[song ID]/[song ID]-metadata.json`. Inside the JSON file, you'll need to write a JSON Patch document to tell Polymod to add your variation to the song's `playData.songVariations` array. Here's an example of how you can do this:
+
+```json
+[
+    {
+        "op": "add",
+        "path": "/playData/songVariations/-",
+        "value": "your-variation-name"
+    }
+]
+```
+And this is how you can inject your variation to a song using the new JSON Patch merge logic. If you want to inject your variation to multiple songs, you can repeat the same process for each song you want to inject your variation to.
+
+# Original Instructions (deprecated):
+
 Instead of replacing existing songs' default metadata and chart files, this framework allows you to inject your variation into existing songs using polymod's append logic. This way, you can add your variation to an existing song without replacing its files, and multiple mods can add their variations to the same song without conflicting with yours.
 
 To inject your variation into existing songs, you'll need to put an empty `.txt` file in this folder, with its name as your variation's name, and then add another `.txt` file with the same name to the same place, but through the `_append` folder, and fill that file with the song ids you want to inject your variation to separated by new lines. This method utlizes polymod's append logic, which means every variation injection file you make will be appendable by other mods.
