@@ -112,6 +112,7 @@ class StoryDiffs extends Module {
         super.onSongLoaded(event);
 
         if (PlayState.instance == null) {return;}
+        if (!PlayStatePlaylist.isStoryMode) {return;}
 
         PlayState.instance.currentInstrumental = PlayState.instance.
             currentSong.getDifficulty(PlayState.instance.currentDifficulty,
