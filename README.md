@@ -1,5 +1,24 @@
 ![UD-Logo](UD-Logo.gif)
 
+> [!IMPORTANT]  
+> This mod only works on V-Slice 0.5.0. Don't try to run it on any other version, because it will have bugs and errors.
+> 
+> I am planning to split this mod into multiple, smaller, simpler mods, which will include the features that are still relevant in the latest
+> versions of FNF. My current plans are as follows:
+>
+> 1) Variation-specific song scripts - I tested this feature on FNF 0.7.3 and it worked perfectly fine as far as I'm aware, so giving this it's own mod would be a good idea imo. I also think no one even noticed I added this feature to UD last year (BECAUSE NO ONE USED IT!!!), So I hope this feature will finally get the spotlight it deserved!
+> 
+> 2) Animated difficulty sprites on result screen - This is a very small feature, but it's neat, and I bet some modders would want a dependency like this, so why not?
+> 
+> 3) Unrestricted story mode menu difficulties - For those who don't know (which is most of you), this was the first goal (and the first name) of the Unrestricted Difficulties mod. YEP, This mod was originally only about the story mode menu, but because there was demand for more features and I was willing to keep working on the mod, the mod's scope was expanded and the name was changed, which was a MISTAKE, because this kind of mod, which makes use of very specific stuff in the game's code and will break for every small change, was destined to be very hard to maintain in such a scope on my own and ESPECIALLY in a game that includes breaking changes in almost EVERY UPDATE! So what I want to do with this one is take story mode related features from UD and give them their own mod. From what I tested, there are some bugs with some of these features, so making this work will be a bit more tricky, and some features might be removed. To be honest, I'm not sure if I'll really work on this one, but the idea is there and I guess it's POSSIBLE. It's just hacky as HELL and I really don't want to mess with it anymore.
+>
+> So the only two things I'm sure I won't be working on are the following:
+>
+> 1) Variation injection - because you can already do that with polymod's merge logic since V-Slice 0.5.0. It's also deprecated in the last version of UD for the same reason (I just kept it for backwards-compatibility). I have a guide on how to use polymod's merge logic to inject variations into existing songs [right here](data/UD/vari-injections/README.md) if you want to use it (You can literally do it right now on the latest version of V-Slice and you don't need to have UD as a dependency).
+> 2) The difficulty display name and difficulty sorting system - because this is the one thing that creates THE MAJORITY of the bugs on the newer versions of FNF and it's generally a very confusing system and I don't like it at all.
+>
+> So this repository will be archived from now on, because I'm no longer be working on UD as a single project.
+
 # Unrestricted Difficulties
 
 The Unrestricted Difficulties framework is a soft-coded FNF mod, which gives FNF modders more control over difficulties and variations.
